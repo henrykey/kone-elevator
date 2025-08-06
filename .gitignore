@@ -1,3 +1,9 @@
 .python-version
 __pycache__/*pyc
 Service Robot API solution validation test guide version 2.docx
+
+# 排除demo报告目录
+demo_reports/
+
+# 排除日志文件
+*.log

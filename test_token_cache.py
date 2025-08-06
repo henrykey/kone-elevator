@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 KONE Token缓存机制测试脚本
 测试token的获取、缓存、自动刷新功能

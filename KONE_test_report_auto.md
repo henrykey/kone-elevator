@@ -122,7 +122,7 @@ Test_12	Same source/dest floor	Call cancelled, Error message	✅ Error: SAME_SOU
 
 1. 自动化脚本入口
 
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """KONE验证测试自动化执行器"""
 
 async def main():

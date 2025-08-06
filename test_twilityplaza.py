@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 TwilityPlaza虚拟建筑测试
 使用真实的虚拟建筑数据进行完整功能测试

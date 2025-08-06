@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 KONE Service Robot API Solution Validation Test Suite v2.0
 基于KONE验证测试指南的自动化测试脚本

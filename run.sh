@@ -7,8 +7,8 @@ echo "Author: IBC-AI CO."
 echo "========================================="
 
 # 检查Python环境
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python3 未安装，请先安装Python3"
+if ! command -v python &> /dev/null; then
+    echo "❌ Python 未安装，请先安装Python"
     exit 1
 fi
 
@@ -33,43 +33,48 @@ echo "2. 运行完整测试（默认模式）"
 echo "3. 运行完整测试（详细日志）"
 echo "4. 运行测试验证"
 echo "5. 模拟运行（不执行实际测试）"
-echo "6. 查看帮助"
+echo "6. 测试报告生成功能"
+echo "7. 查看帮助"
 
-read -p "请输入选项 (1-6): " choice
+read -p "请输入选项 (1-7): " choice
 
 case $choice in
     1)
         echo "🌐 启动FastAPI服务..."
-        python3 app.py
+        python app.py
         ;;
     2)
         echo "🧪 运行完整测试（默认模式）..."
-        python3 main.py
+        python main.py
         ;;
     3)
         echo "🧪 运行完整测试（详细日志）..."
-        python3 main.py --verbose
+        python main.py --verbose
         ;;
     4)
         echo "🔍 运行测试验证..."
         echo "验证测试协调器..."
-        python3 test_coordinator_verify.py
+        python test_coordinator_verify.py
         echo "验证测试映射器..."
-        python3 test_mapper_verify.py
+        python test_mapper_verify.py
         echo "验证建筑数据管理器..."
-        python3 building_manager_verify.py
+        python building_manager_verify.py
         echo "验证报告生成器..."
-        python3 report_generator_verify.py
+        python report_generator_verify.py
         echo "验证执行阶段..."
-        python3 test_phases_verify.py
+        python test_phases_verify.py
         ;;
     5)
         echo "🔍 模拟运行..."
-        python3 main.py --dry-run
+        python main.py --dry-run
         ;;
     6)
-        echo "📖 查看帮助..."
-        python3 main.py --help
+        echo "� 测试报告生成功能..."
+        python test_report_generation.py
+        ;;
+    7)
+        echo "�📖 查看帮助..."
+        python main.py --help
         ;;
     *)
         echo "❌ 无效选项"

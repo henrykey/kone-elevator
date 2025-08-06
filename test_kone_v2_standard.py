@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 KONE SR-API v2.0 标准合规性测试
 严格按照 elevator-websocket-api-v2.yaml 规范进行测试

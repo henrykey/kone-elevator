@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 KONE API 发现和探索测试
 用于发现可用的建筑ID、配置和测试数据

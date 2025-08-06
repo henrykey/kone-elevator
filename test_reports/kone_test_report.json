@@ -1,0 +1,102 @@
+{
+  "report_info": {
+    "company": "IBC-AI CO.",
+    "generation_time": "2025-08-07T07:02:35.411531",
+    "report_version": "1.0"
+  },
+  "metadata": {
+    "company": "IBC-AI CO.",
+    "test_date": "2025-08-07T07:02:35.411516",
+    "api_version": "2.0.0",
+    "test_framework": "KONE SR-API v2.0",
+    "total_tests": 5,
+    "building_id": "TEST_BUILDING_001"
+  },
+  "statistics": {
+    "total_tests": 5,
+    "passed_tests": 3,
+    "failed_tests": 1,
+    "error_tests": 0,
+    "skipped_tests": 1,
+    "success_rate": 60.0,
+    "total_duration_ms": 3060.8,
+    "average_duration_ms": 612.16,
+    "category_breakdown": {
+      "初始化测试": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "呼叫管理测试": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "错误处理测试": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1
+      },
+      "状态监控测试": {
+        "total": 1,
+        "passed": 0,
+        "failed": 0
+      },
+      "性能测试": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      }
+    }
+  },
+  "test_results": [
+    {
+      "test_id": "TC001",
+      "name": "初始化测试",
+      "status": "PASS",
+      "duration_ms": 150.5,
+      "error_message": null,
+      "response_data": null,
+      "category": "初始化测试"
+    },
+    {
+      "test_id": "TC002",
+      "name": "呼叫电梯测试",
+      "status": "PASS",
+      "duration_ms": 320.8,
+      "error_message": null,
+      "response_data": null,
+      "category": "呼叫管理测试"
+    },
+    {
+      "test_id": "TC003",
+      "name": "错误处理测试",
+      "status": "FAIL",
+      "duration_ms": 89.2,
+      "error_message": "API响应超时",
+      "response_data": null,
+      "category": "错误处理测试"
+    },
+    {
+      "test_id": "TC004",
+      "name": "状态监控测试",
+      "status": "SKIP",
+      "duration_ms": 0,
+      "error_message": null,
+      "response_data": null,
+      "category": "状态监控测试"
+    },
+    {
+      "test_id": "TC005",
+      "name": "性能测试",
+      "status": "PASS",
+      "duration_ms": 2500.3,
+      "error_message": null,
+      "response_data": {
+        "response_time": 250,
+        "throughput": 150
+      },
+      "category": "性能测试"
+    }
+  ]
+}

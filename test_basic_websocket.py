@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 简单的WebSocket连接和会话测试
 逐步调试KONE API连接问题
