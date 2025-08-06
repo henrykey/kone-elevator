@@ -1,0 +1,3 @@
+2025-08-06 18:51:38,960 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 18:51:38,961 - drivers - ERROR - WebSocket connection failed: OAuth token acquisition failed: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 18:51:38,962 - app - ERROR - Initialize failed: {'success': False, 'status_code': 500, 'error': 'Failed to establish WebSocket connection'}
