@@ -1,0 +1,352 @@
+{
+  "test_date": "August 05, 2025",
+  "company": "IBC-AI Co.",
+  "total_tests": 37,
+  "passed_tests": 37,
+  "failed_tests": 0,
+  "pass_rate": "100.0%",
+  "test_results": [
+    {
+      "test_id": "Test_001",
+      "description": "Simple elevator call from floor 1 to floor 5",
+      "expected": "HTTP 201, success response with action_id",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"ec185714-5340-42c7-8ac3-dcb1e095d97a\"\n}",
+      "duration_ms": 6.575,
+      "timestamp": "2025-08-06T13:11:16.983699"
+    },
+    {
+      "test_id": "Test_002",
+      "description": "Elevator call with 5 second delay",
+      "expected": "HTTP 201, success response with delay acknowledged",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"168ffddd-5597-4a8d-80d6-678028dd08b8\"\n}",
+      "duration_ms": 2004.8530000000003,
+      "timestamp": "2025-08-06T13:11:16.990322"
+    },
+    {
+      "test_id": "Test_003",
+      "description": "Elevator call with custom action_id",
+      "expected": "HTTP 201, response contains provided action_id",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"CUSTOM_001\"\n}",
+      "duration_ms": 4.452,
+      "timestamp": "2025-08-06T13:11:18.995365"
+    },
+    {
+      "test_id": "Test_004",
+      "description": "Call from basement (-1) to top floor (50)",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"7627aec7-724c-4943-8ef4-9ad737bc4366\"\n}",
+      "duration_ms": 3.7,
+      "timestamp": "2025-08-06T13:11:18.999946"
+    },
+    {
+      "test_id": "Test_005",
+      "description": "Elevator call from high floor to low floor",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"c261c9db-8e8e-4c26-844c-17a1c1efc860\"\n}",
+      "duration_ms": 3.662,
+      "timestamp": "2025-08-06T13:11:19.003845"
+    },
+    {
+      "test_id": "Test_006",
+      "description": "Basic call test variation 6",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"254c20d9-836e-4289-b9a2-0cb6b41b96cc\"\n}",
+      "duration_ms": 3.633,
+      "timestamp": "2025-08-06T13:11:19.007624"
+    },
+    {
+      "test_id": "Test_007",
+      "description": "Basic call test variation 7",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"f1519db1-a2eb-469c-8a12-cfa1351ab6b1\"\n}",
+      "duration_ms": 3.1310000000000002,
+      "timestamp": "2025-08-06T13:11:19.011386"
+    },
+    {
+      "test_id": "Test_008",
+      "description": "Basic call test variation 8",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"d46bbd21-57ce-4815-a216-8b475f32eff3\"\n}",
+      "duration_ms": 3.965,
+      "timestamp": "2025-08-06T13:11:19.014596"
+    },
+    {
+      "test_id": "Test_009",
+      "description": "Basic call test variation 9",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"015476c8-2157-4bb7-9e6b-899642a11f56\"\n}",
+      "duration_ms": 2.3080000000000003,
+      "timestamp": "2025-08-06T13:11:19.018655"
+    },
+    {
+      "test_id": "Test_010",
+      "description": "Basic call test variation 10",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"6f90d37c-0819-4fe2-8a2b-8c89e04e7c60\"\n}",
+      "duration_ms": 2.154,
+      "timestamp": "2025-08-06T13:11:19.021026"
+    },
+    {
+      "test_id": "Test_011",
+      "description": "Call with invalid delay (31 seconds)",
+      "expected": "HTTP 400, error response INVALID_DELAY",
+      "test_result": "Pass",
+      "log_response": "{\n  \"detail\": \"Delay cannot exceed 30 seconds\"\n}",
+      "duration_ms": 2.48,
+      "timestamp": "2025-08-06T13:11:19.023271"
+    },
+    {
+      "test_id": "Test_012",
+      "description": "Call with same source and destination floor",
+      "expected": "HTTP 400, error response INVALID_FLOOR",
+      "test_result": "Pass",
+      "log_response": "{\n  \"detail\": \"Source and destination floors cannot be the same\"\n}",
+      "duration_ms": 1.874,
+      "timestamp": "2025-08-06T13:11:19.025809"
+    },
+    {
+      "test_id": "Test_013",
+      "description": "Call with floor number exceeding building limit",
+      "expected": "HTTP 400, error response INVALID_FLOOR",
+      "test_result": "Pass",
+      "log_response": "{\n  \"detail\": \"Floor numbers must be between -2 and 50\"\n}",
+      "duration_ms": 1.986,
+      "timestamp": "2025-08-06T13:11:19.027731"
+    },
+    {
+      "test_id": "Test_014",
+      "description": "Call with floor number below building limit",
+      "expected": "HTTP 400, error response INVALID_FLOOR",
+      "test_result": "Pass",
+      "log_response": "{\n  \"detail\": \"Floor numbers must be between -2 and 50\"\n}",
+      "duration_ms": 1.735,
+      "timestamp": "2025-08-06T13:11:19.029775"
+    },
+    {
+      "test_id": "Test_015",
+      "description": "Call with missing building_id",
+      "expected": "HTTP 422, validation error",
+      "test_result": "Pass",
+      "log_response": "{\n  \"detail\": [\n    {\n      \"type\": \"missing\",\n      \"loc\": [\n        \"body\",\n        \"building_id\"\n      ],\n      \"msg\": \"Field required\",\n      \"input\": {\n        \"source\": 1,\n        \"destination\": 5\n      },\n      \"url\": \"https://errors.pydantic.dev/2.5/v/missing\"\n    }\n  ]\n}",
+      "duration_ms": 2.655,
+      "timestamp": "2025-08-06T13:11:19.031551"
+    },
+    {
+      "test_id": "Test_016",
+      "description": "Call with maximum allowed delay (30 seconds)",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"5e905b19-0601-4fc1-a8b8-e7f0845305ca\"\n}",
+      "duration_ms": 2005.712,
+      "timestamp": "2025-08-06T13:11:19.034272"
+    },
+    {
+      "test_id": "Test_017",
+      "description": "Call with zero delay",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"6c8cc153-12bc-4d1f-951e-1f589e7116f8\"\n}",
+      "duration_ms": 4.265,
+      "timestamp": "2025-08-06T13:11:21.040166"
+    },
+    {
+      "test_id": "Test_018",
+      "description": "Parameter validation test 18",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"984d9949-fe8e-46d5-a404-afb7f741e868\"\n}",
+      "duration_ms": 3.519,
+      "timestamp": "2025-08-06T13:11:21.044578"
+    },
+    {
+      "test_id": "Test_019",
+      "description": "Parameter validation test 19",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"16c7c8c8-0f9f-4116-a13c-db5f8471a51c\"\n}",
+      "duration_ms": 3.836,
+      "timestamp": "2025-08-06T13:11:21.048350"
+    },
+    {
+      "test_id": "Test_020",
+      "description": "Parameter validation test 20",
+      "expected": "HTTP 201, success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"91c5f156-fea2-4155-9657-68cfca3d3df2\"\n}",
+      "duration_ms": 3.612,
+      "timestamp": "2025-08-06T13:11:21.052324"
+    },
+    {
+      "test_id": "Test_021",
+      "description": "Cancel a valid elevator call",
+      "expected": "HTTP 200, cancel success response",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"d40f450d-21e7-457a-8b18-4e008e6aa7c5\"\n}",
+      "duration_ms": 7.0089999999999995,
+      "timestamp": "2025-08-06T13:11:21.056050"
+    },
+    {
+      "test_id": "Test_022",
+      "description": "Cancel non-existent call",
+      "expected": "HTTP 404, CALL_NOT_FOUND error",
+      "test_result": "Pass",
+      "log_response": "{\n  \"detail\": \"Call NON_EXISTENT_ID not found or already cancelled\"\n}",
+      "duration_ms": 2.2520000000000002,
+      "timestamp": "2025-08-06T13:11:21.063136"
+    },
+    {
+      "test_id": "Test_023",
+      "description": "Cancel operation test 23",
+      "expected": "HTTP 200, cancel success",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"a7a7d7c7-5b4e-4d5a-ac42-5a590bdd2b40\"\n}",
+      "duration_ms": 4.91,
+      "timestamp": "2025-08-06T13:11:21.065459"
+    },
+    {
+      "test_id": "Test_024",
+      "description": "Cancel operation test 24",
+      "expected": "HTTP 200, cancel success",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"c88f8c8f-4209-4199-8fd4-caf8f0dbcb95\"\n}",
+      "duration_ms": 3.999,
+      "timestamp": "2025-08-06T13:11:21.070454"
+    },
+    {
+      "test_id": "Test_025",
+      "description": "Cancel operation test 25",
+      "expected": "HTTP 200, cancel success",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"5815574a-0316-44fc-9fd2-783fcce0b4eb\"\n}",
+      "duration_ms": 3.714,
+      "timestamp": "2025-08-06T13:11:21.074512"
+    },
+    {
+      "test_id": "Test_026",
+      "description": "Get elevator mode for building",
+      "expected": "HTTP 200, mode data returned",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": {\n    \"building_id\": \"TEST_BUILDING_001\",\n    \"elevator_id\": \"default\",\n    \"mode\": \"normal\",\n    \"available\": true,\n    \"timestamp\": \"2025-08-06T05:11:21.079191Z\"\n  },\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": null\n}",
+      "duration_ms": 1.9589999999999999,
+      "timestamp": "2025-08-06T13:11:21.078284"
+    },
+    {
+      "test_id": "Test_027",
+      "description": "Get elevator system status",
+      "expected": "HTTP 200, status data returned",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": {\n    \"building_id\": \"TEST_BUILDING_001\",\n    \"elevators\": [\n      {\n        \"elevator_id\": \"A\",\n        \"current_floor\": 1,\n        \"direction\": \"up\",\n        \"available\": true,\n        \"mode\": \"normal\"\n      },\n      {\n        \"elevator_id\": \"B\",\n        \"current_floor\": 5,\n        \"direction\": \"down\",\n        \"available\": true,\n        \"mode\": \"normal\"\n      }\n    ],\n    \"active_calls\": 15,\n    \"timestamp\": \"2025-08-06T05:11:21.081132Z\"\n  },\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": null\n}",
+      "duration_ms": 1.599,
+      "timestamp": "2025-08-06T13:11:21.080300"
+    },
+    {
+      "test_id": "Test_028",
+      "description": "Mode/status test 28",
+      "expected": "HTTP 200, data returned",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": {\n    \"building_id\": \"TEST_BUILDING_001\",\n    \"elevator_id\": \"default\",\n    \"mode\": \"normal\",\n    \"available\": true,\n    \"timestamp\": \"2025-08-06T05:11:21.082801Z\"\n  },\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": null\n}",
+      "duration_ms": 1.4040000000000001,
+      "timestamp": "2025-08-06T13:11:21.081985"
+    },
+    {
+      "test_id": "Test_029",
+      "description": "Mode/status test 29",
+      "expected": "HTTP 200, data returned",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": {\n    \"building_id\": \"TEST_BUILDING_001\",\n    \"elevator_id\": \"default\",\n    \"mode\": \"normal\",\n    \"available\": true,\n    \"timestamp\": \"2025-08-06T05:11:21.084191Z\"\n  },\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": null\n}",
+      "duration_ms": 1.332,
+      "timestamp": "2025-08-06T13:11:21.083442"
+    },
+    {
+      "test_id": "Test_030",
+      "description": "Mode/status test 30",
+      "expected": "HTTP 200, data returned",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": {\n    \"building_id\": \"TEST_BUILDING_001\",\n    \"elevator_id\": \"default\",\n    \"mode\": \"normal\",\n    \"available\": true,\n    \"timestamp\": \"2025-08-06T05:11:21.085722Z\"\n  },\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": null\n}",
+      "duration_ms": 1.5299999999999998,
+      "timestamp": "2025-08-06T13:11:21.084822"
+    },
+    {
+      "test_id": "Test_031",
+      "description": "Multiple rapid successive calls",
+      "expected": "HTTP 201 for all calls",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"d7bce013-716a-457a-b5ac-0f80a124ad66\"\n}",
+      "duration_ms": 7.443,
+      "timestamp": "2025-08-06T13:11:21.086398"
+    },
+    {
+      "test_id": "Test_032",
+      "description": "Performance test 32",
+      "expected": "HTTP 201, acceptable response time",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"8adcf218-11ca-4059-b662-fc5e2c652ae7\"\n}",
+      "duration_ms": 1.3780000000000001,
+      "timestamp": "2025-08-06T13:11:21.093887"
+    },
+    {
+      "test_id": "Test_033",
+      "description": "Performance test 33",
+      "expected": "HTTP 201, acceptable response time",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"c648af0f-3d0e-4378-aec7-9c20c4d99602\"\n}",
+      "duration_ms": 1.451,
+      "timestamp": "2025-08-06T13:11:21.095306"
+    },
+    {
+      "test_id": "Test_034",
+      "description": "Performance test 34",
+      "expected": "HTTP 201, acceptable response time",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"b4c43ff4-b1a1-4643-9714-6a2917255f9f\"\n}",
+      "duration_ms": 1.3940000000000001,
+      "timestamp": "2025-08-06T13:11:21.096795"
+    },
+    {
+      "test_id": "Test_035",
+      "description": "Performance test 35",
+      "expected": "HTTP 201, acceptable response time",
+      "test_result": "Pass",
+      "log_response": "{\n  \"success\": true,\n  \"data\": null,\n  \"error\": null,\n  \"message\": null,\n  \"action_id\": \"e9370068-1bad-4dcd-85d5-fb0ea1d6be7d\"\n}",
+      "duration_ms": 1.49,
+      "timestamp": "2025-08-06T13:11:21.098224"
+    },
+    {
+      "test_id": "Test_036",
+      "description": "Service health check",
+      "expected": "HTTP 200, service running",
+      "test_result": "Pass",
+      "log_response": "{\n  \"service\": \"Elevator Control API\",\n  \"status\": \"running\",\n  \"supported_elevators\": [\n    \"kone\"\n  ]\n}",
+      "duration_ms": 1.153,
+      "timestamp": "2025-08-06T13:11:21.099759"
+    },
+    {
+      "test_id": "Test_037",
+      "description": "Get supported elevator types",
+      "expected": "HTTP 200, KONE type supported",
+      "test_result": "Pass",
+      "log_response": "{\n  \"supported_types\": [\n    \"kone\"\n  ],\n  \"default_type\": \"kone\"\n}",
+      "duration_ms": 1.039,
+      "timestamp": "2025-08-06T13:11:21.100952"
+    }
+  ],
+  "summary": {
+    "basic_calls": 10,
+    "error_handling": 5,
+    "parameter_validation": 5,
+    "cancel_operations": 5,
+    "mode_status": 5,
+    "performance": 5,
+    "security": 2
+  }
+}

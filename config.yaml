@@ -1,0 +1,6 @@
+default_elevator_type: kone
+kone:
+  client_id: c6567db5-52d2-487c-8a73-2794da7c5c89
+  client_secret: 0e49374816356ff61eeb4dba3e48b92fb024d230160737646177fe1538075fc0
+  token_endpoint: https://dev.kone.com/api/v2/oauth2/token
+  ws_endpoint: wss://dev.kone.com/stream-v2
