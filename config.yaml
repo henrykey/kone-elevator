@@ -1,5 +1,9 @@
 default_elevator_type: kone
 kone:
+  cached_token:
+    access_token: eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJodHRwczovL2Rldi5rb25lLmNvbS9hcGkvIiwiaWF0IjoxNzU0NDgzNjcwLCJhdWQiOiJrb25lLWFwaXMiLCJzdWIiOiJjNjU2N2RiNS01MmQyLTQ4N2MtOGE3My0yNzk0ZGE3YzVjODkiLCJzY29wZSI6ImFwcGxpY2F0aW9uL2ludmVudG9yeSIsInNhbmRib3giOnRydWUsImV4cCI6MTc1NDQ4NzI3MCwib3JnIjoxfQ.pnO9Ua5eGVIzefQyv5a-mE_wRuJuw2T6QbmE45yeFjxqW1axj-HWbbMp-A0VMgiqRdEHsCbOvoLE8BcwcHhMUA
+    expires_at: '2025-08-06T21:34:30.581491'
+    token_type: Bearer
   client_id: c6567db5-52d2-487c-8a73-2794da7c5c89
   client_secret: 0e49374816356ff61eeb4dba3e48b92fb024d230160737646177fe1538075fc0
   token_endpoint: https://dev.kone.com/api/v2/oauth2/token

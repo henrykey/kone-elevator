@@ -63,16 +63,13 @@ class ResumeSessionMessage(BaseModel):
 
 class ElevatorCallRequest(BaseModel):
     building_id: str = Field(..., description="Building ID")
+    source: int = Field(..., description="Source floor/area")
+    destination: int = Field(..., description="Destination floor/area")
+    delay: int = Field(0, ge=0, le=30, description="Delay in seconds")
+    action_id: int = Field(2, description="Action ID")
     group_id: str = Field("1", description="Group ID")
-    from_floor: int = Field(..., description="Source floor number")
-    to_floor: int = Field(..., description="Destination floor number")
-    user_id: str = Field(..., description="User ID")
-    source: Optional[int] = Field(None, description="Source area ID (auto-calculated if not provided)")
-    destination: Optional[int] = Field(None, description="Destination area ID (auto-calculated if not provided)")
-    action_id: int = Field(2, description="Action ID for destination calls")
     call_type: str = Field("action", description="Call type")
     terminal: int = Field(1, description="Terminal ID")
-    delay: int = Field(0, ge=0, le=30, description="Delay in seconds")
     language: Optional[str] = Field("en-GB", description="Language preference")
     priority: Optional[str] = Field("LOW", description="Call priority")
     group_size: Optional[int] = Field(1, description="Group size")
@@ -438,19 +435,15 @@ class KoneDriver(ElevatorDriver):
                 if not init_result['success']:
                     return init_result
             
-            # 计算源区域和目标区域（如果未提供）
-            source_area = request.source or (request.from_floor * 1000)
-            destination_area = request.destination or (request.to_floor * 1000)
-            
             # 构建呼叫消息
             call_payload = LiftCallPayload(
                 request_id=str(uuid.uuid4()),
-                area=source_area,
+                area=request.source,
                 time=datetime.now().isoformat() + 'Z',
                 terminal=request.terminal,
                 call=CallRequest(
                     action=request.action_id,
-                    destination=destination_area,
+                    destination=request.destination,
                     language=request.language,
                     delay=request.delay,
                     call_replacement_priority=request.priority,
@@ -469,7 +462,7 @@ class KoneDriver(ElevatorDriver):
             
             response = await self._send_message(lift_call_msg.dict())
             
-            if response.get('statusCode') == 201:
+            if response.get('status') == 201:
                 result = {
                     'success': True,
                     'status_code': 201,
@@ -513,7 +506,7 @@ class KoneDriver(ElevatorDriver):
             
             response = await self._send_message(cancel_msg.dict())
             
-            if response.get('statusCode') == 202:
+            if response.get('status') == 202:
                 result = {
                     'success': True,
                     'status_code': 202,
@@ -562,7 +555,7 @@ class KoneDriver(ElevatorDriver):
             
             response = await self._send_message(monitor_msg, timeout=10)
             
-            if response.get('statusCode') == 200:
+            if response.get('status') == 200:
                 # 等待状态更新消息
                 try:
                     status_msg = await asyncio.wait_for(self.message_queue.get(), timeout=5)
@@ -625,7 +618,7 @@ class KoneDriver(ElevatorDriver):
             
             response = await self._send_message(config_msg)
             
-            if response.get('statusCode') == 200:
+            if response.get('status') == 200:
                 result = {
                     'success': True,
                     'status_code': 200,
@@ -674,7 +667,7 @@ class KoneDriver(ElevatorDriver):
             response = await self._send_message(ping_msg, timeout=10)
             end_time = datetime.now()
             
-            if response.get('statusCode') == 200:
+            if response.get('status') == 200:
                 latency = (end_time - start_time).total_seconds() * 1000
                 result = {
                     'success': True,
@@ -720,7 +713,7 @@ class KoneDriver(ElevatorDriver):
             
             response = await self._send_message(actions_msg)
             
-            if response.get('statusCode') == 200:
+            if response.get('status') == 200:
                 result = {
                     'success': True,
                     'status_code': 200,

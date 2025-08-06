@@ -1,3 +1,499 @@
 2025-08-06 18:51:38,960 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
 2025-08-06 18:51:38,961 - drivers - ERROR - WebSocket connection failed: OAuth token acquisition failed: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
 2025-08-06 18:51:38,962 - app - ERROR - Initialize failed: {'success': False, 'status_code': 500, 'error': 'Failed to establish WebSocket connection'}
+2025-08-06 18:59:20,185 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:12:45,543 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:16:30,720 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:16:30,720 - drivers - ERROR - WebSocket connection failed: OAuth token acquisition failed: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:49:58,063 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:49:58,064 - drivers - ERROR - WebSocket connection failed: OAuth token acquisition failed: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:49:59,683 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:49:59,683 - drivers - ERROR - WebSocket connection failed: OAuth token acquisition failed: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:53:18,255 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 19:53:18,256 - drivers - ERROR - WebSocket connection failed: OAuth token acquisition failed: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 20:08:27,643 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:08:27,643 - app - INFO - Closed kone driver
+2025-08-06 20:09:57,910 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:09:57,910 - app - INFO - Closed kone driver
+2025-08-06 20:09:59,841 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:09:59,841 - app - INFO - Closed kone driver
+2025-08-06 20:10:54,267 - drivers - INFO - Acquiring new access token...
+2025-08-06 20:10:57,557 - drivers - ERROR - Failed to get access token: 401 Client Error: Unauthorized for url: https://dev.kone.com/api/v2/oauth2/token
+2025-08-06 20:12:25,625 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:12:25,625 - app - INFO - Closed kone driver
+2025-08-06 20:12:26,823 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:12:26,823 - app - INFO - Closed kone driver
+2025-08-06 20:14:40,782 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:14:40,782 - app - INFO - Closed kone driver
+2025-08-06 20:19:35,845 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:19:35,846 - app - INFO - Closed kone driver
+2025-08-06 20:22:53,274 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:22:53,274 - app - INFO - Closed kone driver
+2025-08-06 20:28:26,145 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:28:26,146 - app - INFO - Closed kone driver
+2025-08-06 20:32:12,687 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:32:12,687 - app - INFO - Closed kone driver
+2025-08-06 20:33:54,239 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:33:54,239 - app - INFO - Closed kone driver
+2025-08-06 20:34:23,565 - drivers - INFO - Requesting new access token
+2025-08-06 20:34:30,585 - drivers - INFO - Token saved to config cache
+2025-08-06 20:34:30,585 - drivers - INFO - New access token obtained, expires in 3600s
+2025-08-06 20:34:30,587 - drivers - INFO - Using cached access token
+2025-08-06 20:34:30,587 - drivers - INFO - Connecting to WebSocket: wss://dev.kone.com/stream-v2?accessToken=eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJodHRwczovL2Rldi5rb25lLmNvbS9hcGkvIiwiaWF0IjoxNzU0NDgzNjcwLCJhdWQiOiJrb25lLWFwaXMiLCJzdWIiOiJjNjU2N2RiNS01MmQyLTQ4N2MtOGE3My0yNzk0ZGE3YzVjODkiLCJzY29wZSI6ImFwcGxpY2F0aW9uL2ludmVudG9yeSIsInNhbmRib3giOnRydWUsImV4cCI6MTc1NDQ4NzI3MCwib3JnIjoxfQ.pnO9Ua5eGVIzefQyv5a-mE_wRuJuw2T6QbmE45yeFjxqW1axj-HWbbMp-A0VMgiqRdEHsCbOvoLE8BcwcHhMUA
+2025-08-06 20:34:32,374 - drivers - INFO - WebSocket connected successfully
+2025-08-06 20:34:32,375 - drivers - INFO - Sent message: {
+  "type": "create-session",
+  "requestId": "e84a1c9c-feeb-4506-bb9e-a0e8d32c2f1a"
+}
+2025-08-06 20:34:34,051 - drivers - INFO - Received message: {
+  "type": "ok",
+  "connectionId": "O4jJ2ekbjoECF1Q=",
+  "requestId": "e84a1c9c-feeb-4506-bb9e-a0e8d32c2f1a",
+  "statusCode": 201,
+  "timestamp": "2025-08-06T12:34:33.920Z",
+  "data": {
+    "sessionId": "04fbb9cf-d6be-445e-b7a2-80efe10f121e"
+  }
+}
+2025-08-06 20:34:34,052 - drivers - ERROR - Session initialization failed: {'success': False, 'status_code': 500, 'error': 'Session creation failed'}
+2025-08-06 20:34:35,776 - drivers - INFO - WebSocket connection closed
+2025-08-06 20:34:35,777 - drivers - WARNING - WebSocket connection closed
+2025-08-06 20:34:35,782 - drivers - INFO - Token loaded from config cache
+2025-08-06 20:34:35,782 - drivers - INFO - Using cached access token
+2025-08-06 20:34:35,784 - drivers - INFO - Token loaded from config cache
+2025-08-06 20:34:35,784 - drivers - INFO - Using cached access token
+2025-08-06 20:36:52,416 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:36:52,416 - app - INFO - Closed kone driver
+2025-08-06 20:46:08,248 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:46:08,249 - app - INFO - Closed kone driver
+2025-08-06 20:46:52,295 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:46:52,295 - app - INFO - Closed kone driver
+2025-08-06 20:47:33,713 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:47:33,713 - app - INFO - Closed kone driver
+2025-08-06 20:47:53,295 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:47:53,295 - app - INFO - Closed kone driver
+2025-08-06 20:48:12,166 - app - INFO - Shutting down elevator control service...
+2025-08-06 20:48:12,166 - app - INFO - Closed kone driver
+2025-08-06 21:28:03,932 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:28:03,932 - app - INFO - Closed kone driver
+2025-08-06 21:28:36,535 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:28:36,535 - app - INFO - Closed kone driver
+2025-08-06 21:29:05,581 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:29:05,582 - app - INFO - Closed kone driver
+2025-08-06 21:29:28,207 - drivers - INFO - Token loaded from config cache
+2025-08-06 21:29:28,208 - drivers - INFO - Using cached access token
+2025-08-06 21:29:28,208 - drivers - INFO - Connecting to WebSocket: wss://dev.kone.com/stream-v2?accessToken=eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJodHRwczovL2Rldi5rb25lLmNvbS9hcGkvIiwiaWF0IjoxNzU0NDgzNjcwLCJhdWQiOiJrb25lLWFwaXMiLCJzdWIiOiJjNjU2N2RiNS01MmQyLTQ4N2MtOGE3My0yNzk0ZGE3YzVjODkiLCJzY29wZSI6ImFwcGxpY2F0aW9uL2ludmVudG9yeSIsInNhbmRib3giOnRydWUsImV4cCI6MTc1NDQ4NzI3MCwib3JnIjoxfQ.pnO9Ua5eGVIzefQyv5a-mE_wRuJuw2T6QbmE45yeFjxqW1axj-HWbbMp-A0VMgiqRdEHsCbOvoLE8BcwcHhMUA
+2025-08-06 21:29:30,030 - drivers - INFO - WebSocket connected successfully
+2025-08-06 21:29:30,031 - drivers - INFO - Sent message: {
+  "type": "create-session",
+  "requestId": "289e3bad-8efc-49f5-b405-2bdf52b6c43f"
+}
+2025-08-06 21:29:31,598 - drivers - INFO - Received message: {
+  "type": "ok",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "289e3bad-8efc-49f5-b405-2bdf52b6c43f",
+  "statusCode": 201,
+  "timestamp": "2025-08-06T13:29:31.388Z",
+  "data": {
+    "sessionId": "cc1bfe3e-25cc-4a1e-84fb-87f39d77e3fa"
+  }
+}
+2025-08-06 21:29:31,598 - drivers - INFO - Session initialized: {'success': True, 'status_code': 201, 'session_id': 'cc1bfe3e-25cc-4a1e-84fb-87f39d77e3fa', 'message': 'Session created successfully'}
+2025-08-06 21:29:31,599 - drivers - INFO - Sent message: {
+  "type": "common-api",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "ping",
+  "groupId": "1",
+  "payload": {
+    "request_id": 1754486971598
+  },
+  "requestId": "57d732a8-5d84-4b4c-8408-a3987a7970b1"
+}
+2025-08-06 21:29:32,003 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "",
+  "statusCode": 400,
+  "data": {
+    "error": "'requestId' is not allowed"
+  }
+}
+2025-08-06 21:29:41,600 - drivers - ERROR - Ping error: {'success': False, 'status_code': 500, 'error': 'Ping failed: Request timeout after 10s'}
+2025-08-06 21:29:41,602 - drivers - INFO - Sent message: {
+  "type": "common-api",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "config",
+  "groupId": "1",
+  "requestId": "e7bbeb6a-a777-4ce2-9bb6-423c25392171"
+}
+2025-08-06 21:29:41,994 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "e7bbeb6a-a777-4ce2-9bb6-423c25392171",
+  "statusCode": 404,
+  "data": {
+    "error": "Building data not found for ID 1"
+  }
+}
+2025-08-06 21:29:41,994 - drivers - ERROR - Config retrieval failed: {'success': False, 'status_code': 500, 'error': 'Config retrieval failed'}
+2025-08-06 21:29:41,995 - drivers - INFO - Sent message: {
+  "type": "common-api",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "actions",
+  "groupId": "1",
+  "requestId": "e73eb62b-b363-498f-84a2-b1c381b5c7cc"
+}
+2025-08-06 21:29:42,356 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "e73eb62b-b363-498f-84a2-b1c381b5c7cc",
+  "statusCode": 404,
+  "data": {
+    "error": "Building data not found for ID 1"
+  }
+}
+2025-08-06 21:29:42,356 - drivers - ERROR - Actions retrieval failed: {'success': False, 'status_code': 500, 'error': 'Actions retrieval failed'}
+2025-08-06 21:29:42,357 - drivers - INFO - Sent message: {
+  "type": "site-monitoring",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "monitor",
+  "groupId": "1",
+  "payload": {
+    "sub": "elevator-status-d7978a5d-099b-419b-a8f0-57e64f4231d2",
+    "duration": 60,
+    "subtopics": [
+      "lift_status/+",
+      "deck_position/+"
+    ]
+  },
+  "requestId": "3ea5ecfd-3bbd-44b2-8e65-552b5ad6205b"
+}
+2025-08-06 21:29:42,736 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "3ea5ecfd-3bbd-44b2-8e65-552b5ad6205b",
+  "statusCode": 404,
+  "data": {
+    "error": "Building data not found for ID building:TwilityPlaza"
+  }
+}
+2025-08-06 21:29:42,737 - drivers - ERROR - Mode check failed: {'success': False, 'status_code': 500, 'error': 'Mode check failed'}
+2025-08-06 21:29:42,737 - drivers - INFO - Sent message: {
+  "type": "lift-call-api-v2",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "action",
+  "groupId": "1",
+  "payload": {
+    "request_id": "4dfae4ef-2057-4d97-83bb-0c2f77323092",
+    "area": 1000,
+    "time": "2025-08-06T21:29:42.737284Z",
+    "terminal": 1,
+    "call": {
+      "action": 2,
+      "destination": 10000,
+      "language": "en-GB",
+      "delay": 0,
+      "call_replacement_priority": "LOW",
+      "group_size": 1,
+      "allowed_lifts": null
+    },
+    "media_id": null,
+    "media_cc": null,
+    "media_type": null
+  },
+  "requestId": "73032712-b433-4a2c-b4d4-460f1561d38b"
+}
+2025-08-06 21:29:43,521 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "4dfae4ef-2057-4d97-83bb-0c2f77323092",
+  "statusCode": 400,
+  "data": {
+    "error": "'payload.request_id' must be a number"
+  }
+}
+2025-08-06 21:30:12,739 - drivers - ERROR - Call error: {'success': False, 'status_code': 500, 'error': 'Call failed: Request timeout after 30s'}
+2025-08-06 21:30:12,741 - drivers - INFO - Sent message: {
+  "type": "lift-call-api-v2",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "action",
+  "groupId": "1",
+  "payload": {
+    "request_id": "d5a1f1dc-c1fb-4add-88cb-cf8f121b26d9",
+    "area": 1010,
+    "time": "2025-08-06T21:30:12.740731Z",
+    "terminal": 1,
+    "call": {
+      "action": 2,
+      "destination": 5000,
+      "language": "en-GB",
+      "delay": 0,
+      "call_replacement_priority": "LOW",
+      "group_size": 1,
+      "allowed_lifts": null
+    },
+    "media_id": null,
+    "media_cc": null,
+    "media_type": null
+  },
+  "requestId": "9cd53df9-cf10-402e-82cd-93f32636ea95"
+}
+2025-08-06 21:30:13,079 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "d5a1f1dc-c1fb-4add-88cb-cf8f121b26d9",
+  "statusCode": 400,
+  "data": {
+    "error": "'payload.request_id' must be a number"
+  }
+}
+2025-08-06 21:30:42,742 - drivers - ERROR - Call error: {'success': False, 'status_code': 500, 'error': 'Call failed: Request timeout after 30s'}
+2025-08-06 21:30:42,744 - drivers - INFO - Sent message: {
+  "type": "lift-call-api-v2",
+  "buildingId": "building:TwilityPlaza",
+  "callType": "action",
+  "groupId": "1",
+  "payload": {
+    "request_id": "253ad6f9-ff04-4637-9d0a-6fd8f28a29ef",
+    "area": 20000,
+    "time": "2025-08-06T21:30:42.743274Z",
+    "terminal": 1,
+    "call": {
+      "action": 2,
+      "destination": 30000,
+      "language": "en-GB",
+      "delay": 0,
+      "call_replacement_priority": "LOW",
+      "group_size": 1,
+      "allowed_lifts": null
+    },
+    "media_id": null,
+    "media_cc": null,
+    "media_type": null
+  },
+  "requestId": "66c1e525-b355-4f9e-8c95-2872eecbc2e0"
+}
+2025-08-06 21:30:43,115 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4rNGfsyDoECGSQ=",
+  "requestId": "253ad6f9-ff04-4637-9d0a-6fd8f28a29ef",
+  "statusCode": 400,
+  "data": {
+    "error": "'payload.request_id' must be a number"
+  }
+}
+2025-08-06 21:34:34,045 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:34:34,045 - app - INFO - Closed kone driver
+2025-08-06 21:34:52,086 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:34:52,087 - app - INFO - Closed kone driver
+2025-08-06 21:36:51,700 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:36:51,700 - app - INFO - Closed kone driver
+2025-08-06 21:37:03,782 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:37:03,782 - app - INFO - Closed kone driver
+2025-08-06 21:37:39,635 - drivers - INFO - Token loaded from config cache
+2025-08-06 21:37:39,635 - drivers - INFO - Requesting new access token
+2025-08-06 21:37:41,041 - drivers - INFO - Token saved to config cache
+2025-08-06 21:37:41,041 - drivers - INFO - New access token obtained, expires in 3600s
+2025-08-06 21:37:41,043 - drivers - INFO - Connecting to WebSocket: wss://dev.kone.com/stream-v2?accessToken=eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJodHRwczovL2Rldi5rb25lLmNvbS9hcGkvIiwiaWF0IjoxNzU0NDg3NDYxLCJhdWQiOiJrb25lLWFwaXMiLCJzdWIiOiJjNjU2N2RiNS01MmQyLTQ4N2MtOGE3My0yNzk0ZGE3YzVjODkiLCJzY29wZSI6ImFwcGxpY2F0aW9uL2ludmVudG9yeSIsInNhbmRib3giOnRydWUsImV4cCI6MTc1NDQ5MTA2MSwib3JnIjoxfQ.M3H--p70LtvgdFQwMoxaiCRqJ0Y_8j95iWB6WTJoEq-TvMlwUgP7lN6BUpd1w5YGIk0ZcoptX6A3KvKDzbVkgg
+2025-08-06 21:37:42,184 - drivers - INFO - WebSocket connected successfully
+2025-08-06 21:37:42,185 - drivers - INFO - Sent message: {
+  "type": "create-session",
+  "requestId": "2e12e8cf-15b7-488f-b0a2-709e4b0b25f4"
+}
+2025-08-06 21:37:43,750 - drivers - INFO - Received message: {
+  "type": "ok",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "2e12e8cf-15b7-488f-b0a2-709e4b0b25f4",
+  "statusCode": 201,
+  "timestamp": "2025-08-06T13:37:43.606Z",
+  "data": {
+    "sessionId": "ec6ea310-b3a4-4384-aeb2-4a36df6090b5"
+  }
+}
+2025-08-06 21:37:43,751 - drivers - INFO - Session initialized: {'success': True, 'status_code': 201, 'session_id': 'ec6ea310-b3a4-4384-aeb2-4a36df6090b5', 'message': 'Session created successfully'}
+2025-08-06 21:37:43,751 - drivers - INFO - Sent message: {
+  "type": "common-api",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "ping",
+  "groupId": "1",
+  "payload": {
+    "request_id": 1754487463751
+  },
+  "requestId": "6519d966-81c4-4823-9552-0884cf023905"
+}
+2025-08-06 21:37:44,087 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "",
+  "statusCode": 400,
+  "data": {
+    "error": "'requestId' is not allowed"
+  }
+}
+2025-08-06 21:37:53,753 - drivers - ERROR - Ping error: {'success': False, 'status_code': 500, 'error': 'Ping failed: Request timeout after 10s'}
+2025-08-06 21:37:53,755 - drivers - INFO - Sent message: {
+  "type": "common-api",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "config",
+  "groupId": "1",
+  "requestId": "f16a0eee-5372-4715-b6af-c37a1693dd28"
+}
+2025-08-06 21:37:54,180 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "f16a0eee-5372-4715-b6af-c37a1693dd28",
+  "statusCode": 403,
+  "data": {
+    "error": "Token does not contain required scope for fWlfHyPlaca:1"
+  }
+}
+2025-08-06 21:37:54,181 - drivers - ERROR - Config retrieval failed: {'success': False, 'status_code': 500, 'error': 'Config retrieval failed'}
+2025-08-06 21:37:54,182 - drivers - INFO - Sent message: {
+  "type": "common-api",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "actions",
+  "groupId": "1",
+  "requestId": "d84da731-b709-4235-94f6-2b1fda091fff"
+}
+2025-08-06 21:37:54,568 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "d84da731-b709-4235-94f6-2b1fda091fff",
+  "statusCode": 403,
+  "data": {
+    "error": "Token does not contain required scope for fWlfHyPlaca:1"
+  }
+}
+2025-08-06 21:37:54,569 - drivers - ERROR - Actions retrieval failed: {'success': False, 'status_code': 500, 'error': 'Actions retrieval failed'}
+2025-08-06 21:37:54,570 - drivers - INFO - Sent message: {
+  "type": "site-monitoring",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "monitor",
+  "groupId": "1",
+  "payload": {
+    "sub": "elevator-status-16a1bbfb-db3e-49a6-9d2d-839e9feafc1c",
+    "duration": 60,
+    "subtopics": [
+      "lift_status/+",
+      "deck_position/+"
+    ]
+  },
+  "requestId": "66f19a43-d259-47f1-a3d3-5d1a8eee985f"
+}
+2025-08-06 21:37:54,925 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "66f19a43-d259-47f1-a3d3-5d1a8eee985f",
+  "statusCode": 403,
+  "data": {
+    "error": "Token does not contain required scope for fWlfHyPlaca:1"
+  }
+}
+2025-08-06 21:37:54,925 - drivers - ERROR - Mode check failed: {'success': False, 'status_code': 500, 'error': 'Mode check failed'}
+2025-08-06 21:37:54,925 - drivers - INFO - Sent message: {
+  "type": "lift-call-api-v2",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "action",
+  "groupId": "1",
+  "payload": {
+    "request_id": "4ff6bfae-0d1a-452b-91fa-630d7f9798b1",
+    "area": 1000,
+    "time": "2025-08-06T21:37:54.925567Z",
+    "terminal": 1,
+    "call": {
+      "action": 2,
+      "destination": 10000,
+      "language": "en-GB",
+      "delay": 0,
+      "call_replacement_priority": "LOW",
+      "group_size": 1,
+      "allowed_lifts": null
+    },
+    "media_id": null,
+    "media_cc": null,
+    "media_type": null
+  },
+  "requestId": "a6a9b4a8-32b1-4bd1-901a-4a6308129c13"
+}
+2025-08-06 21:37:55,273 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "4ff6bfae-0d1a-452b-91fa-630d7f9798b1",
+  "statusCode": 400,
+  "data": {
+    "error": "'payload.request_id' must be a number"
+  }
+}
+2025-08-06 21:38:24,927 - drivers - ERROR - Call error: {'success': False, 'status_code': 500, 'error': 'Call failed: Request timeout after 30s'}
+2025-08-06 21:38:24,928 - drivers - INFO - Sent message: {
+  "type": "lift-call-api-v2",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "action",
+  "groupId": "1",
+  "payload": {
+    "request_id": "27715bd0-13b2-46dc-ac13-f995bb1125ef",
+    "area": 1010,
+    "time": "2025-08-06T21:38:24.928001Z",
+    "terminal": 1,
+    "call": {
+      "action": 2,
+      "destination": 5000,
+      "language": "en-GB",
+      "delay": 0,
+      "call_replacement_priority": "LOW",
+      "group_size": 1,
+      "allowed_lifts": null
+    },
+    "media_id": null,
+    "media_cc": null,
+    "media_type": null
+  },
+  "requestId": "81586535-b4b0-44c7-b5c7-5dd4cebb516a"
+}
+2025-08-06 21:38:25,270 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "27715bd0-13b2-46dc-ac13-f995bb1125ef",
+  "statusCode": 400,
+  "data": {
+    "error": "'payload.request_id' must be a number"
+  }
+}
+2025-08-06 21:38:54,929 - drivers - ERROR - Call error: {'success': False, 'status_code': 500, 'error': 'Call failed: Request timeout after 30s'}
+2025-08-06 21:38:54,931 - drivers - INFO - Sent message: {
+  "type": "lift-call-api-v2",
+  "buildingId": "building:fWlfHyPlaca",
+  "callType": "action",
+  "groupId": "1",
+  "payload": {
+    "request_id": "5e2fcbc9-fac6-4cfe-b55c-b0f817d0d125",
+    "area": 20000,
+    "time": "2025-08-06T21:38:54.930682Z",
+    "terminal": 1,
+    "call": {
+      "action": 2,
+      "destination": 30000,
+      "language": "en-GB",
+      "delay": 0,
+      "call_replacement_priority": "LOW",
+      "group_size": 1,
+      "allowed_lifts": null
+    },
+    "media_id": null,
+    "media_cc": null,
+    "media_type": null
+  },
+  "requestId": "f3f19fb7-f325-4f8a-885c-b6dec8124eb3"
+}
+2025-08-06 21:38:55,739 - drivers - INFO - Received message: {
+  "type": "error",
+  "connectionId": "O4saBemTjoECFYw=",
+  "requestId": "5e2fcbc9-fac6-4cfe-b55c-b0f817d0d125",
+  "statusCode": 400,
+  "data": {
+    "error": "'payload.request_id' must be a number"
+  }
+}
+2025-08-06 21:39:07,365 - drivers - INFO - WebSocket connection closed
+2025-08-06 21:40:38,454 - app - INFO - Shutting down elevator control service...
+2025-08-06 21:40:38,455 - app - INFO - Closed kone driver
