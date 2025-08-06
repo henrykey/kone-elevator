@@ -235,30 +235,96 @@ class KoneValidationTestCoordinator:
             
             # Phase 2: 核心测试执行
             logger.info("Phase 2: Core test execution")
-            # 注意：这里暂时返回占位符，等待阶段2的TestCaseMapper实现
-            validation_result["phases"]["phase_2"] = {
-                "name": "Core Test Execution", 
-                "status": "PENDING",
-                "message": "Awaiting TestCaseMapper implementation",
-                "test_count": 37
-            }
+            try:
+                from test_execution_phases import phase_2_core_tests
+                
+                # 准备阶段1的数据传递给阶段2
+                phase1_data = {
+                    "building_manager": None,  # 将在实际实现中传递
+                    "test_mapper": None,       # 将在实际实现中传递
+                }
+                
+                phase2_result = await phase_2_core_tests(phase1_data, self.api_base_url)
+                validation_result["phases"]["phase_2"] = phase2_result
+                
+                if phase2_result["status"] == "COMPLETED":
+                    logger.info(f"✅ Phase 2 completed: {phase2_result.get('statistics', {}).get('total_tests', 0)} tests executed")
+                else:
+                    logger.error(f"❌ Phase 2 failed: {phase2_result.get('error', 'Unknown error')}")
+                    
+            except ImportError:
+                validation_result["phases"]["phase_2"] = {
+                    "name": "Core Test Execution", 
+                    "status": "PENDING",
+                    "message": "Test execution phases module not available",
+                    "test_count": 37
+                }
+            except Exception as e:
+                validation_result["phases"]["phase_2"] = {
+                    "name": "Core Test Execution",
+                    "status": "ERROR", 
+                    "error": str(e)
+                }
             
             # Phase 3: 报告生成
             logger.info("Phase 3: Report generation")
-            # 注意：这里暂时返回占位符，等待阶段4的ReportGenerator实现
-            validation_result["phases"]["phase_3"] = {
-                "name": "Report Generation",
-                "status": "PENDING", 
-                "message": "Awaiting ReportGenerator implementation"
-            }
+            try:
+                from test_execution_phases import phase_3_report_generation
+                
+                # 只有当阶段2成功时才执行报告生成
+                if validation_result["phases"]["phase_2"].get("status") == "COMPLETED":
+                    phase3_result = await phase_3_report_generation(
+                        validation_result["phases"]["phase_2"],
+                        {},  # phase1_data - 将在实际实现中传递
+                        self.metadata
+                    )
+                    validation_result["phases"]["phase_3"] = phase3_result
+                    
+                    if phase3_result["status"] == "COMPLETED":
+                        validation_result["reports"] = phase3_result.get("reports", {})
+                        logger.info("✅ Phase 3 completed: Reports generated")
+                    else:
+                        logger.error(f"❌ Phase 3 failed: {phase3_result.get('error', 'Unknown error')}")
+                else:
+                    validation_result["phases"]["phase_3"] = {
+                        "name": "Report Generation",
+                        "status": "SKIPPED",
+                        "message": "Skipped due to Phase 2 failure"
+                    }
+                    
+            except ImportError:
+                validation_result["phases"]["phase_3"] = {
+                    "name": "Report Generation",
+                    "status": "PENDING", 
+                    "message": "Test execution phases module not available"
+                }
+            except Exception as e:
+                validation_result["phases"]["phase_3"] = {
+                    "name": "Report Generation",
+                    "status": "ERROR",
+                    "error": str(e)
+                }
             
             # 计算总体结果
+            completed_phases = sum(1 for phase in validation_result["phases"].values() 
+                                 if phase.get("status") == "COMPLETED")
+            
             validation_result["summary"] = {
                 "total_phases": 3,
-                "completed_phases": 1,
-                "overall_status": "PARTIALLY_COMPLETED",
-                "next_step": "Implement TestCaseMapper for Phase 2"
+                "completed_phases": completed_phases,
+                "overall_status": "COMPLETED" if completed_phases == 3 else "PARTIALLY_COMPLETED",
+                "has_reports": bool(validation_result.get("reports")),
+                "execution_summary": {
+                    "phase_1": validation_result["phases"]["phase_1"].get("status"),
+                    "phase_2": validation_result["phases"]["phase_2"].get("status"), 
+                    "phase_3": validation_result["phases"]["phase_3"].get("status")
+                }
             }
+            
+            if completed_phases == 3:
+                logger.info("✅ KONE validation test suite completed successfully")
+            else:
+                logger.info(f"⚠️ KONE validation partially completed: {completed_phases}/3 phases")
             
             logger.info("KONE validation test coordination completed (Phase 1)")
             return validation_result
