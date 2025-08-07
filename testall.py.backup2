@@ -2,6 +2,7 @@
 """
 Complete Elevator Call Scenarios Test: Based on ping.py success pattern for all 37 test cases
 Complete KONE SR-API v2.0 validation test suite
+Enhanced with dynamic building configuration retrieval
 """
 
 import asyncio
@@ -10,9 +11,8 @@ import json
 import yaml
 import base64
 import requests
-import aiohttp
 import random
-import uuid
+import aiohttp
 from datetime import datetime
 
 def load_config():
@@ -52,108 +52,43 @@ def get_request_id():
     """Generate request ID"""
     return random.randint(100000000, 999999999)
 
-async def test_elevator_scenario(websocket, scenario_name, test_id, call_data, test_type="call", building_id="building:L1QinntdEOg"):
-    """Test single elevator scenario"""
-    print(f"\n🧪 {scenario_name} ({test_id})")
-    print("-" * 40)
-    
-    request_id = get_request_id()
-    
-    if test_type == "ping":
-        # Ping test
-        ping_payload = {
-            'type': 'common-api',
-            'buildingId': building_id,
-            'callType': 'ping',
-            'groupId': '1',
-            'payload': {
-                'request_id': request_id
-            }
+async def get_available_buildings(config):
+    """Get available buildings from KONE API"""
+    try:
+        token = get_access_token(config['client_id'], config['client_secret'], 
+                                config.get('token_endpoint', 'https://dev.kone.com/api/v2/oauth2/token'))
+        
+        url = "https://dev.kone.com/api/v2/application/self/resources"
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
         }
         
-        print(f'[📤] Sending ping test')
-        await websocket.send(json.dumps(ping_payload))
-        
-    elif test_type == "actions":
-        # Action/status query test
-        action_payload = {
-            'type': 'common-api',
-            'requestId': str(request_id),
-            'buildingId': building_id,
-            'callType': 'actions',
-            'groupId': '1',
-            'payload': {
-                'request_id': request_id,
-                'action': 'query',
-                **call_data
-            }
-        }
-        
-        print(f'[📤] Sending action query: {call_data}')
-        await websocket.send(json.dumps(action_payload))
-        
-    else:
-        # Default call test
-        call_payload = {
-            'type': 'common-api',
-            'requestId': str(request_id),
-            'buildingId': building_id,
-            'callType': 'actions',
-            'groupId': '1',
-            'payload': {
-                'request_id': request_id,
-                'action': 'call',
-                **call_data
-            }
-        }
-        
-        print(f'[📤] Sending call: {call_data}')
-        await websocket.send(json.dumps(call_payload))
-    
-    # Wait for responses
-    responses = []
-    timeout_count = 0
-    max_timeout = 2
-    
-    while len(responses) < 2 and timeout_count < max_timeout:
-        try:
-            message = await asyncio.wait_for(websocket.recv(), timeout=8.0)
-            data = json.loads(message)
-            responses.append(data)
-            
-            print(f'[📩] Response #{len(responses)}:')
-            
-            # Simplified output of key information
-            if data.get('statusCode'):
-                print(f'   Status Code: {data["statusCode"]}')
-            if data.get('data', {}).get('time'):
-                print(f'   Time: {data["data"]["time"]}')
-            if data.get('callType'):
-                print(f'   Call Type: {data["callType"]}')
-                if data.get('callType') == 'actions':
-                    call_types = data.get('data', {}).get('call_types', [])
-                    print(f'   Supported call types count: {len(call_types)}')
-                
-        except asyncio.TimeoutError:
-            timeout_count += 1
-            print(f'[⚠️] Waiting timeout #{timeout_count}')
-            break
-        except Exception as e:
-            print(f'[❌] Receive error: {e}')
-            break
-    
-    # Analyze results
-    if test_type == "ping":
-        success = any(r.get('callType') == 'ping' for r in responses)
-    else:
-        success = any(r.get('statusCode') == 201 for r in responses)
-        
-    if success:
-        print(f'[✅] {scenario_name} - Test passed!')
-    else:
-        print(f'[❌] {scenario_name} - Test failed')
-        
-    return success
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    buildings = data.get('buildings', [])
+                    print(f"🏢 发现 {len(buildings)} 栋可用建筑")
+                    
+                    # 选择第一栋建筑进行测试
+                    if buildings:
+                        selected = buildings[0]
+                        print(f"✅ 选择建筑: {selected['id']} ({selected.get('name', 'N/A')})")
+                        return selected['id'], token
+                    else:
+                        print("⚠️ 未发现可用建筑，使用默认建筑ID")
+                        return 'L1QinntdEOg', token
+                else:
+                    print(f"❌ 获取建筑列表失败: {response.status}")
+                    return 'L1QinntdEOg', token
+                    
+    except Exception as e:
+        print(f"❌ 获取建筑列表异常: {e}")
+        # 返回默认值
+        token = get_access_token(config['client_id'], config['client_secret'], 
+                                config.get('token_endpoint', 'https://dev.kone.com/api/v2/oauth2/token'))
+        return 'L1QinntdEOg', token
 
 async def get_available_buildings_list(config):
     """Get list of available buildings from KONE API"""
@@ -195,109 +130,56 @@ async def get_available_buildings_list(config):
         return ['L1QinntdEOg', 'fWlfHyPlaca'], token
 
 async def get_building_config_via_ping(websocket, building_id, max_retries=3):
-    """Use multiple request types to get building configuration with retry mechanism"""
+    """Use ping call to get building configuration with retry mechanism"""
     formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
     
     for retry_count in range(max_retries):
         try:
-            # 尝试多种请求类型获取配置
-            test_requests = [
-                {
-                    "name": "actions",
-                    "message": {
-                        "type": "common-api",
-                        "requestId": str(uuid.uuid4()),
-                        "callType": "actions",
-                        "buildingId": formatted_building_id,
-                        "groupId": "1"
-                    }
-                },
-                {
-                    "name": "config", 
-                    "message": {
-                        "type": "common-api",
-                        "requestId": str(uuid.uuid4()),
-                        "callType": "config",
-                        "buildingId": formatted_building_id,
-                        "groupId": "1"
-                    }
-                },
-                {
-                    "name": "ping",
-                    "message": {
-                        "type": "common-api",
-                        "buildingId": formatted_building_id,
-                        "callType": "ping",
-                        "groupId": "1",
-                        "payload": {
-                            "request_id": get_request_id()
-                        }
-                    }
+            request_id = get_request_id()
+            
+            ping_msg = {
+                "type": "common-api",
+                "buildingId": formatted_building_id,
+                "callType": "ping",
+                "groupId": "1",
+                "payload": {
+                    "request_id": request_id
                 }
-            ]
+            }
             
-            print(f"📡 正在获取建筑 {building_id} 的配置... (尝试 {retry_count + 1}/{max_retries})")
+            print(f"📡 正在通过 ping 获取建筑 {building_id} 的配置... (尝试 {retry_count + 1}/{max_retries})")
+            await websocket.send(json.dumps(ping_msg))
             
-            for request in test_requests:
+            # 等待响应
+            timeout_count = 0
+            while timeout_count < 3:
                 try:
-                    print(f"  🔸 尝试 {request['name']} 请求...")
-                    await websocket.send(json.dumps(request['message']))
+                    message = await asyncio.wait_for(websocket.recv(), timeout=15)
+                    data = json.loads(message)
                     
-                    # 等待响应
-                    timeout_count = 0
-                    while timeout_count < 2:  # 减少单个请求的等待时间
-                        try:
-                            message = await asyncio.wait_for(websocket.recv(), timeout=10)
-                            data = json.loads(message)
-                            
-                            # 检查 actions 响应中的配置数据
-                            if (data.get('callType') == 'actions' and 
-                                data.get('data', {}).get('destinations')):
-                                
-                                config_data = data['data']
-                                print(f"✅ 通过 actions 请求成功获取建筑配置")
-                                print(f"   - 目标区域数量: {len(config_data.get('destinations', []))}")
-                                print(f"   - 电梯组数量: {len(config_data.get('groups', []))}")
-                                return config_data
-                            
-                            # 检查 config 响应中的配置数据
-                            elif (data.get('callType') == 'config' and 
-                                  data.get('data', {}).get('destinations')):
-                                
-                                config_data = data['data']
-                                print(f"✅ 通过 config 请求成功获取建筑配置")
-                                print(f"   - 目标区域数量: {len(config_data.get('destinations', []))}")
-                                print(f"   - 电梯组数量: {len(config_data.get('groups', []))}")
-                                return config_data
-                            
-                            # 检查 ping 响应
-                            elif data.get('callType') == 'ping':
-                                print(f"  ✓ ping 响应正常，状态码: {data.get('statusCode', 'N/A')}")
-                                
-                        except asyncio.TimeoutError:
-                            timeout_count += 1
-                            print(f"    ⚠️ {request['name']} 请求超时 #{timeout_count}")
-                            break
-                        except Exception as e:
-                            print(f"    ❌ {request['name']} 请求解析异常: {e}")
-                            break
-                            
-                except Exception as e:
-                    print(f"    ❌ {request['name']} 请求发送异常: {e}")
-                    continue
+                    # 检查是否是包含配置信息的ping响应
+                    if (data.get('callType') == 'config' and 
+                        data.get('data', {}).get('destinations')):
+                        
+                        print(f"✅ 成功获取建筑配置，包含 {len(data['data']['destinations'])} 个目标区域")
+                        return data['data']
+                    
+                except asyncio.TimeoutError:
+                    timeout_count += 1
+                    print(f"⚠️ 等待配置响应超时 #{timeout_count}")
                     
             print(f"❌ 第 {retry_count + 1} 次尝试未能获取建筑配置")
             
             # 如果不是最后一次尝试，等待一小段时间再重试
             if retry_count < max_retries - 1:
-                print("🔄 等待 3 秒后重试...")
-                await asyncio.sleep(3)
+                print("🔄 等待 2 秒后重试...")
+                await asyncio.sleep(2)
                 
         except Exception as e:
             print(f"❌ 第 {retry_count + 1} 次获取建筑配置异常: {e}")
             if retry_count < max_retries - 1:
-                print("🔄 等待 3 秒后重试...")
-                await asyncio.sleep(3)
+                print("🔄 等待 2 秒后重试...")
+                await asyncio.sleep(2)
     
     print(f"❌ 经过 {max_retries} 次尝试仍未能获取建筑配置")
     return None
@@ -430,8 +312,115 @@ def generate_virtual_building_config(building_id, config_data):
             print("🔄 创建基础配置文件作为备选...")
             generate_virtual_building_config(building_id, None)
 
+def get_request_id():
+    """Generate request ID"""
+    return random.randint(100000000, 999999999)
+
+async def test_elevator_scenario(websocket, scenario_name, test_id, call_data, test_type="call", building_id="building:L1QinntdEOg"):
+    """Test single elevator scenario with dynamic building ID"""
+    print(f"\n🧪 {scenario_name} ({test_id})")
+    print("-" * 40)
+    
+    request_id = get_request_id()
+    
+    if test_type == "ping":
+        # Ping test
+        ping_payload = {
+            'type': 'common-api',
+            'buildingId': building_id,
+            'callType': 'ping',
+            'groupId': '1',
+            'payload': {
+                'request_id': request_id
+            }
+        }
+        
+        print(f'[📤] Sending ping test')
+        await websocket.send(json.dumps(ping_payload))
+        
+    elif test_type == "actions":
+        # Action/status query test
+        action_payload = {
+            'type': 'common-api',
+            'requestId': str(request_id),
+            'buildingId': building_id,
+            'callType': 'actions',
+            'groupId': '1',
+            'payload': {
+                'request_id': request_id,
+                'action': 'query',
+                **call_data
+            }
+        }
+        
+        print(f'[📤] Sending action query: {call_data}')
+        await websocket.send(json.dumps(action_payload))
+        
+    else:
+        # Default call test
+        call_payload = {
+            'type': 'common-api',
+            'requestId': str(request_id),
+            'buildingId': building_id,
+            'callType': 'actions',
+            'groupId': '1',
+            'payload': {
+                'request_id': request_id,
+                'action': 'call',
+                **call_data
+            }
+        }
+        
+        print(f'[📤] Sending call: {call_data}')
+        await websocket.send(json.dumps(call_payload))
+    
+    # Wait for responses
+    responses = []
+    timeout_count = 0
+    max_timeout = 2
+    
+    while len(responses) < 2 and timeout_count < max_timeout:
+        try:
+            message = await asyncio.wait_for(websocket.recv(), timeout=8.0)
+            data = json.loads(message)
+            responses.append(data)
+            
+            print(f'[📩] Response #{len(responses)}:')
+            
+            # Simplified output of key information
+            if data.get('statusCode'):
+                print(f'   Status Code: {data["statusCode"]}')
+            if data.get('data', {}).get('time'):
+                print(f'   Time: {data["data"]["time"]}')
+            if data.get('callType'):
+                print(f'   Call Type: {data["callType"]}')
+                if data.get('callType') == 'actions':
+                    call_types = data.get('data', {}).get('call_types', [])
+                    print(f'   Supported call types count: {len(call_types)}')
+                
+        except asyncio.TimeoutError:
+            timeout_count += 1
+            print(f'[⚠️] Waiting timeout #{timeout_count}')
+            break
+        except Exception as e:
+            print(f'[❌] Receive error: {e}')
+            break
+    
+    # Analyze results
+    if test_type == "ping":
+        success = any(r.get('callType') == 'ping' for r in responses)
+    else:
+        success = any(r.get('statusCode') == 201 for r in responses)
+        
+    if success:
+        print(f'[✅] {scenario_name} - Test passed!')
+    else:
+        print(f'[❌] {scenario_name} - Test failed')
+        
+    return success
+
 async def multi_scenario_test():
-    """Execute complete elevator scenario tests - all 37 test cases with dynamic building selection"""
+    """Execute complete elevator scenario tests - all 37 test cases with dynamic config"""
     print("🏢 KONE Complete Elevator Call Test (37 test cases)")
     print("Enhanced with dynamic building configuration")
     print("=" * 60)
@@ -491,24 +480,47 @@ async def multi_scenario_test():
             websocket = await websockets.connect(uri, subprotocols=['koneapi'])
             print('[✅] WebSocket connection established for default building')
         
-        # 4. Generate/update virtual_building_config.yml
-        print(f"\n📝 步骤 4: 更新配置文件...")
-        generate_virtual_building_config(selected_building_id, config_data)
+        try:
+            # 4. Generate/update virtual_building_config.yml
+            print(f"\n📝 步骤 4: 更新配置文件...")
+            generate_virtual_building_config(selected_building_id, config_data)
+            
+            # 5. Execute all test scenarios with the selected building
+            print(f"\n📊 步骤 5: 执行 37 项测试 (建筑: {selected_building_id})...")
+            
+            # Update building ID in test scenarios
+            formatted_building_id = selected_building_id if selected_building_id.startswith("building:") else f"building:{selected_building_id}"
         
-        # 5. Execute all test scenarios with the selected building
-        print(f"\n📊 步骤 5: 执行 37 项测试 (建筑: {selected_building_id})...")
+        # 2. Establish WebSocket connection and get building config
+        print(f"\n🔌 步骤 2: 连接到建筑 {building_id}...")
+        ws_endpoint = config.get('ws_endpoint', 'wss://dev.kone.com/stream-v2')
+        uri = f"{ws_endpoint}?accessToken={token}"
         
-        # Update building ID in test scenarios
-        formatted_building_id = selected_building_id if selected_building_id.startswith("building:") else f"building:{selected_building_id}"
-        
-        # Complete list of 37 test scenarios
-        test_scenarios = [
-            # Initialization tests
-            {"name": "Solution initialization", "test_id": "Test_1", "test_type": "ping", "data": {}},
-            {"name": "API connectivity verification", "test_id": "Test_2", "test_type": "ping", "data": {}},
-            {"name": "Service status check", "test_id": "Test_3", "test_type": "ping", "data": {}},
-            {"name": "Building configuration validation", "test_id": "Test_4", "test_type": "actions", "data": {"action": "config"}},
-            {"name": "WebSocket handshake verification", "test_id": "Test_5", "test_type": "ping", "data": {}},
+        async with websockets.connect(uri, subprotocols=['koneapi']) as websocket:
+            print('[✅] WebSocket connection established')
+            
+            # 3. Get building configuration via ping
+            print(f"\n🏗️ 步骤 3: 获取建筑配置...")
+            config_data = await get_building_config_via_ping(websocket, building_id)
+            
+            # 4. Generate/update virtual_building_config.yml
+            print(f"\n📝 步骤 4: 更新配置文件...")
+            generate_virtual_building_config(building_id, config_data)
+            
+            # 5. Execute all test scenarios with the selected building
+            print(f"\n� 步骤 5: 执行 37 项测试 (建筑: {building_id})...")
+            
+            # Update building ID in test scenarios
+            formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
+            
+            # Complete list of 37 test scenarios
+            test_scenarios = [
+                # Initialization tests
+                {"name": "Solution initialization", "test_id": "Test_1", "test_type": "ping", "data": {}},
+                {"name": "API connectivity verification", "test_id": "Test_2", "test_type": "ping", "data": {}},
+                {"name": "Service status check", "test_id": "Test_3", "test_type": "ping", "data": {}},
+                {"name": "Building configuration validation", "test_id": "Test_4", "test_type": "actions", "data": {"action": "config"}},
+                {"name": "WebSocket handshake verification", "test_id": "Test_5", "test_type": "ping", "data": {}},
                 
                 # Call management tests
                 {"name": "Basic destination call", "test_id": "Test_6", "test_type": "call", "data": {
@@ -581,92 +593,89 @@ async def multi_scenario_test():
                 {"name": "Resource utilization", "test_id": "Test_33", "test_type": "actions", "data": {"action": "resource_usage"}},
                 {"name": "Service availability", "test_id": "Test_34", "test_type": "ping", "data": {}},
                 {"name": "Data consistency", "test_id": "Test_35", "test_type": "actions", "data": {"action": "data_consistency"}},
-            {"name": "Integration test", "test_id": "Test_36", "test_type": "call", "data": {
-                "from_floor": 6, "to_floor": 9, "user_id": "robot_test_36", "source": 6000, "destination": 9000
-            }},
-            {"name": "End-to-end validation", "test_id": "Test_37", "test_type": "call", "data": {
-                "from_floor": 7, "to_floor": 11, "user_id": "robot_test_37", "source": 7000, "destination": 11000
-            }}
-        ]
-        
-        # Execute all test scenarios
-        results = []
-        print(f"\n🚀 Starting execution of {len(test_scenarios)} test scenarios...")
-        
-        for i, scenario in enumerate(test_scenarios, 1):
-            try:
-                print(f"\n📊 Progress: {i}/{len(test_scenarios)}")
-                success = await test_elevator_scenario(
-                    websocket, 
-                    scenario["name"], 
-                    scenario["test_id"], 
-                    scenario["data"],
-                    scenario.get("test_type", "call"),
-                    formatted_building_id
-                )
-                results.append({
-                    "scenario": scenario["name"],
-                    "test_id": scenario["test_id"],
-                    "success": success,
-                    "category": scenario.get("category", "unknown")
-                })
-                
-                # Brief delay to avoid too rapid requests
-                await asyncio.sleep(0.5)
-                
-            except Exception as e:
-                print(f'[💥] {scenario["name"]} exception: {e}')
-                results.append({
-                    "scenario": scenario["name"],
-                    "test_id": scenario["test_id"],
-                    "success": False,
-                    "error": str(e),
-                    "category": scenario.get("category", "unknown")
-                })
-        
-        # Summary results
-        print("\n" + "=" * 80)
-        print("📊 Test Results Summary:")
-        print("-" * 80)
-        
-        success_count = 0
-        categories = {}
-        
-        for result in results:
-            status = "✅ PASS" if result["success"] else "❌ FAIL"
-            error_info = f" ({result.get('error', '')})" if not result["success"] and result.get('error') else ""
-            print(f"{result['test_id']:12} | {result['scenario']:25} | {status}{error_info}")
+                {"name": "Integration test", "test_id": "Test_36", "test_type": "call", "data": {
+                    "from_floor": 6, "to_floor": 9, "user_id": "robot_test_36", "source": 6000, "destination": 9000
+                }},
+                {"name": "End-to-end validation", "test_id": "Test_37", "test_type": "call", "data": {
+                    "from_floor": 7, "to_floor": 11, "user_id": "robot_test_37", "source": 7000, "destination": 11000
+                }}
+            ]
             
-            if result["success"]:
-                success_count += 1
+            # Execute all test scenarios
+            results = []
+            print(f"\n🚀 Starting execution of {len(test_scenarios)} test scenarios...")
             
-            # Statistics by category
-            category = result.get("category", "unknown")
-            if category not in categories:
-                categories[category] = {"total": 0, "passed": 0}
-            categories[category]["total"] += 1
-            if result["success"]:
-                categories[category]["passed"] += 1
-        
-        print(f"\n📈 Overall Results: {success_count}/{len(results)} tests passed ({success_count/len(results)*100:.1f}%)")
-        
-        # Category statistics
-        if categories:
-            print(f"\n📋 Category Statistics:")
-            for category, stats in categories.items():
-                rate = stats["passed"] / stats["total"] * 100 if stats["total"] > 0 else 0
-                print(f"  {category}: {stats['passed']}/{stats['total']} ({rate:.1f}%)")
-        
-        return success_count == len(results)
-        
+            for i, scenario in enumerate(test_scenarios, 1):
+                try:
+                    print(f"\n📊 Progress: {i}/{len(test_scenarios)}")
+                    success = await test_elevator_scenario(
+                        websocket, 
+                        scenario["name"], 
+                        scenario["test_id"], 
+                        scenario["data"],
+                        scenario.get("test_type", "call"),
+                        formatted_building_id  # Pass dynamic building ID
+                    )
+                    results.append({
+                        "scenario": scenario["name"],
+                        "test_id": scenario["test_id"],
+                        "success": success,
+                        "category": scenario.get("category", "unknown")
+                    })
+                    
+                    # Brief delay to avoid too rapid requests
+                    await asyncio.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f'[💥] {scenario["name"]} exception: {e}')
+                    results.append({
+                        "scenario": scenario["name"],
+                        "test_id": scenario["test_id"],
+                        "success": False,
+                        "error": str(e),
+                        "category": scenario.get("category", "unknown")
+                    })
+            
+            # Summary results
+            print("\n" + "=" * 80)
+            print("📊 Test Results Summary:")
+            print("-" * 80)
+            
+            success_count = 0
+            categories = {}
+            
+            for result in results:
+                status = "✅ PASS" if result["success"] else "❌ FAIL"
+                error_info = f" ({result.get('error', '')})" if not result["success"] and result.get('error') else ""
+                print(f"{result['test_id']:12} | {result['scenario']:25} | {status}{error_info}")
+                
+                if result["success"]:
+                    success_count += 1
+                
+                # Statistics by category
+                category = result.get("category", "unknown")
+                if category not in categories:
+                    categories[category] = {"total": 0, "passed": 0}
+                categories[category]["total"] += 1
+                if result["success"]:
+                    categories[category]["passed"] += 1
+            
+            print(f"\n📈 Overall Results: {success_count}/{len(results)} tests passed ({success_count/len(results)*100:.1f}%)")
+            
+            # Category statistics
+            if categories:
+                print(f"\n📋 Category Statistics:")
+                for category, stats in categories.items():
+                    rate = stats["passed"] / stats["total"] * 100 if stats["total"] > 0 else 0
+                    print(f"  {category}: {stats['passed']}/{stats['total']} ({rate:.1f}%)")
+            
+            return success_count == len(results)
+            
     except Exception as e:
         print(f'[💥] Overall test exception: {e}')
         import traceback
         print(f'[🔍] Detailed error: {traceback.format_exc()}')
         return False
-    finally:
-        if websocket and not websocket.closed:
-            await websocket.close()
 
 async def main():
     """Main function"""

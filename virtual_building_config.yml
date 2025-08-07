@@ -1,533 +1,789 @@
-# Virtual Building Configuration - fWlfHyPlaca
-# Parsed from KONE virtual building interface
-
 building:
-  id: "L1QinntdEOg"
-  
+  api_version: 3
+  id: 4TFxWRCv23D
+  name: Virtual Building 4TFxWRCv23D
+destinations: []
 elevator_groups:
   group_1:
     lifts:
-      - id: "Lift 1 - A"
-        type: "passenger"
-      - id: "Lift 2 - B" 
-        type: "passenger"
-      - id: "Lift 3 - C"
-        type: "passenger"
-      - id: "Lift 4 - D"
-        type: "passenger"
-      - id: "Lift 5 - E"
-        type: "passenger"
-      - id: "Lift 6 - F"
-        type: "passenger"
-      - id: "Lift 7 - G"
-        type: "passenger"
-      - id: "Lift 8 - H"
-        type: "passenger"
-
+    - id: A
+      lift_id: 1
+      type: passenger
+    - id: B
+      lift_id: 2
+      type: passenger
+    - id: C
+      lift_id: 3
+      type: passenger
+    - id: D
+      lift_id: 4
+      type: passenger
+    - id: E
+      lift_id: 5
+      type: passenger
+    - id: F
+      lift_id: 6
+      type: passenger
+    - id: G
+      lift_id: 7
+      type: passenger
+    - id: H
+      lift_id: 8
+      type: passenger
 floors:
-  # Floor mapping from the building interface
-  # Format: floor_name: {front_id, rear_id}
-  
-  deck_1:
-    level: 41
-    lifts:
-      lift_1_a: {front: null, rear: null}
-      lift_2_b: {front: 1001020, rear: null}
-      lift_3_c: {front: 1001030, rear: null}
-      lift_4_d: {front: 1001040, rear: null}
-      lift_5_e: {front: 1001050, rear: null}
-      lift_6_f: {front: 1001060, rear: null}
-      lift_7_g: {front: 1001070, rear: null}
-      lift_8_h: {front: 1001080, rear: null}
-  
-  deck_0:
-    level: 40
-    lifts:
-      lift_1_a: {front: 1001010, rear: null}
-      lift_2_b: {front: 1001020, rear: null}
-      lift_3_c: {front: 1001030, rear: null}
-      lift_4_d: {front: 1001040, rear: null}
-      lift_5_e: {front: 1001050, rear: null}
-      lift_6_f: {front: 1001060, rear: null}
-      lift_7_g: {front: 1001070, rear: null}
-      lift_8_h: {front: 1001080, rear: null}
-
-  # Regular floors (F_M format represents floor levels)
-  f_39:
-    level: 39
-    lifts:
-      lift_1_a: {front: 39000, rear: 39010}
-      lift_2_b: {front: 39000, rear: 39010}
-      lift_3_c: {front: 39000, rear: 39010}
-      lift_4_d: {front: 39000, rear: 39010}
-      lift_5_e: {front: 39000, rear: 39010}
-      lift_6_f: {front: 39000, rear: 39010}
-      lift_7_g: {front: 39000, rear: 39010}
-      lift_8_h: {front: 39000, rear: 39010}
-
-  f_38:
-    level: 38
-    lifts:
-      lift_1_a: {front: 38000, rear: 38010}
-      lift_2_b: {front: 38000, rear: 38010}
-      lift_3_c: {front: 38000, rear: 38010}
-      lift_4_d: {front: 38000, rear: 38010}
-      lift_5_e: {front: 38000, rear: 38010}
-      lift_6_f: {front: 38000, rear: 38010}
-      lift_7_g: {front: 38000, rear: 38010}
-      lift_8_h: {front: 38000, rear: 38010}
-
-  f_37:
-    level: 37
-    lifts:
-      lift_1_a: {front: 37000, rear: 37010}
-      lift_2_b: {front: 37000, rear: 37010}
-      lift_3_c: {front: 37000, rear: 37010}
-      lift_4_d: {front: 37000, rear: 37010}
-      lift_5_e: {front: 37000, rear: 37010}
-      lift_6_f: {front: 37000, rear: 37010}
-      lift_7_g: {front: 37000, rear: 37010}
-      lift_8_h: {front: 37000, rear: 37010}
-
-  f_36:
-    level: 36
-    lifts:
-      lift_1_a: {front: 36000, rear: 36010}
-      lift_2_b: {front: 36000, rear: 36010}
-      lift_3_c: {front: 36000, rear: 36010}
-      lift_4_d: {front: 36000, rear: 36010}
-      lift_5_e: {front: 36000, rear: 36010}
-      lift_6_f: {front: 36000, rear: 36010}
-      lift_7_g: {front: 36000, rear: 36010}
-      lift_8_h: {front: 36000, rear: 36010}
-
-  f_35:
-    level: 35
-    lifts:
-      lift_1_a: {front: 35000, rear: 35010}
-      lift_2_b: {front: 35000, rear: 35010}
-      lift_3_c: {front: 35000, rear: 35010}
-      lift_4_d: {front: 35000, rear: 35010}
-      lift_5_e: {front: 35000, rear: 35010}
-      lift_6_f: {front: 35000, rear: 35010}
-      lift_7_g: {front: 35000, rear: 35010}
-      lift_8_h: {front: 35000, rear: 35010}
-
-  f_34:
-    level: 34
-    lifts:
-      lift_1_a: {front: 34000, rear: 34010}
-      lift_2_b: {front: 34000, rear: 34010}
-      lift_3_c: {front: 34000, rear: 34010}
-      lift_4_d: {front: 34000, rear: 34010}
-      lift_5_e: {front: 34000, rear: 34010}
-      lift_6_f: {front: 34000, rear: 34010}
-      lift_7_g: {front: 34000, rear: 34010}
-      lift_8_h: {front: 34000, rear: 34010}
-
-  f_33:
-    level: 33
-    lifts:
-      lift_1_a: {front: 33000, rear: 33010}
-      lift_2_b: {front: 33000, rear: 33010}
-      lift_3_c: {front: 33000, rear: 33010}
-      lift_4_d: {front: 33000, rear: 33010}
-      lift_5_e: {front: 33000, rear: 33010}
-      lift_6_f: {front: 33000, rear: 33010}
-      lift_7_g: {front: 33000, rear: 33010}
-      lift_8_h: {front: 33000, rear: 33010}
-
-  f_32:
-    level: 32
-    lifts:
-      lift_1_a: {front: 32000, rear: 32010}
-      lift_2_b: {front: 32000, rear: 32010}
-      lift_3_c: {front: 32000, rear: 32010}
-      lift_4_d: {front: 32000, rear: 32010}
-      lift_5_e: {front: 32000, rear: 32010}
-      lift_6_f: {front: 32000, rear: 32010}
-      lift_7_g: {front: 32000, rear: 32010}
-      lift_8_h: {front: 32000, rear: 32010}
-
-  f_31:
-    level: 31
-    lifts:
-      lift_1_a: {front: 31000, rear: 31010}
-      lift_2_b: {front: 31000, rear: 31010}
-      lift_3_c: {front: 31000, rear: 31010}
-      lift_4_d: {front: 31000, rear: 31010}
-      lift_5_e: {front: 31000, rear: 31010}
-      lift_6_f: {front: 31000, rear: 31010}
-      lift_7_g: {front: 31000, rear: 31010}
-      lift_8_h: {front: 31000, rear: 31010}
-
-  f_30:
-    level: 30
-    lifts:
-      lift_1_a: {front: 30000, rear: 30010}
-      lift_2_b: {front: 30000, rear: 30010}
-      lift_3_c: {front: 30000, rear: 30010}
-      lift_4_d: {front: 30000, rear: 30010}
-      lift_5_e: {front: 30000, rear: 30010}
-      lift_6_f: {front: 30000, rear: 30010}
-      lift_7_g: {front: 30000, rear: 30010}
-      lift_8_h: {front: 30000, rear: 30010}
-
-  f_29:
-    level: 29
-    lifts:
-      lift_1_a: {front: 29000, rear: 29010}
-      lift_2_b: {front: 29000, rear: 29010}
-      lift_3_c: {front: 29000, rear: 29010}
-      lift_4_d: {front: 29000, rear: 29010}
-      lift_5_e: {front: 29000, rear: 29010}
-      lift_6_f: {front: 29000, rear: 29010}
-      lift_7_g: {front: 29000, rear: 29010}
-      lift_8_h: {front: 29000, rear: 29010}
-
-  f_28:
-    level: 28
-    lifts:
-      lift_1_a: {front: 28000, rear: 28010}
-      lift_2_b: {front: 28000, rear: 28010}
-      lift_3_c: {front: 28000, rear: 28010}
-      lift_4_d: {front: 28000, rear: 28010}
-      lift_5_e: {front: 28000, rear: 28010}
-      lift_6_f: {front: 28000, rear: 28010}
-      lift_7_g: {front: 28000, rear: 28010}
-      lift_8_h: {front: 28000, rear: 28010}
-
-  f_27:
-    level: 27
-    lifts:
-      lift_1_a: {front: 27000, rear: 27010}
-      lift_2_b: {front: 27000, rear: 27010}
-      lift_3_c: {front: 27000, rear: 27010}
-      lift_4_d: {front: 27000, rear: 27010}
-      lift_5_e: {front: 27000, rear: 27010}
-      lift_6_f: {front: 27000, rear: 27010}
-      lift_7_g: {front: 27000, rear: 27010}
-      lift_8_h: {front: 27000, rear: 27010}
-
-  f_26:
-    level: 26
-    lifts:
-      lift_1_a: {front: 26000, rear: 26010}
-      lift_2_b: {front: 26000, rear: 26010}
-      lift_3_c: {front: 26000, rear: 26010}
-      lift_4_d: {front: 26000, rear: 26010}
-      lift_5_e: {front: 26000, rear: 26010}
-      lift_6_f: {front: 26000, rear: 26010}
-      lift_7_g: {front: 26000, rear: 26010}
-      lift_8_h: {front: 26000, rear: 26010}
-
-  f_25:
-    level: 25
-    lifts:
-      lift_1_a: {front: 25000, rear: 25010}
-      lift_2_b: {front: 25000, rear: 25010}
-      lift_3_c: {front: 25000, rear: 25010}
-      lift_4_d: {front: 25000, rear: 25010}
-      lift_5_e: {front: 25000, rear: 25010}
-      lift_6_f: {front: 25000, rear: 25010}
-      lift_7_g: {front: 25000, rear: 25010}
-      lift_8_h: {front: 25000, rear: 25010}
-
-  f_24:
-    level: 24
-    lifts:
-      lift_1_a: {front: 24000, rear: 24010}
-      lift_2_b: {front: 24000, rear: 24010}
-      lift_3_c: {front: 24000, rear: 24010}
-      lift_4_d: {front: 24000, rear: 24010}
-      lift_5_e: {front: 24000, rear: 24010}
-      lift_6_f: {front: 24000, rear: 24010}
-      lift_7_g: {front: 24000, rear: 24010}
-      lift_8_h: {front: 24000, rear: 24010}
-
-  f_23:
-    level: 23
-    lifts:
-      lift_1_a: {front: 23000, rear: 23010}
-      lift_2_b: {front: 23000, rear: 23010}
-      lift_3_c: {front: 23000, rear: 23010}
-      lift_4_d: {front: 23000, rear: 23010}
-      lift_5_e: {front: 23000, rear: 23010}
-      lift_6_f: {front: 23000, rear: 23010}
-      lift_7_g: {front: 23000, rear: 23010}
-      lift_8_h: {front: 23000, rear: 23010}
-
-  f_22:
-    level: 22
-    lifts:
-      lift_1_a: {front: 22000, rear: 22010}
-      lift_2_b: {front: 22000, rear: 22010}
-      lift_3_c: {front: 22000, rear: 22010}
-      lift_4_d: {front: 22000, rear: 22010}
-      lift_5_e: {front: 22000, rear: 22010}
-      lift_6_f: {front: 22000, rear: 22010}
-      lift_7_g: {front: 22000, rear: 22010}
-      lift_8_h: {front: 22000, rear: 22010}
-
-  f_21:
-    level: 21
-    lifts:
-      lift_1_a: {front: 21000, rear: 21010}
-      lift_2_b: {front: 21000, rear: 21010}
-      lift_3_c: {front: 21000, rear: 21010}
-      lift_4_d: {front: 21000, rear: 21010}
-      lift_5_e: {front: 21000, rear: 21010}
-      lift_6_f: {front: 21000, rear: 21010}
-      lift_7_g: {front: 21000, rear: 21010}
-      lift_8_h: {front: 21000, rear: 21010}
-
-  f_20:
-    level: 20
-    lifts:
-      lift_1_a: {front: 20000, rear: 20010}
-      lift_2_b: {front: 20000, rear: 20010}
-      lift_3_c: {front: 20000, rear: 20010}
-      lift_4_d: {front: 20000, rear: 20010}
-      lift_5_e: {front: 20000, rear: 20010}
-      lift_6_f: {front: 20000, rear: 20010}
-      lift_7_g: {front: 20000, rear: 20010}
-      lift_8_h: {front: 20000, rear: 20010}
-
-  f_19:
-    level: 19
-    lifts:
-      lift_1_a: {front: 19000, rear: 19010}
-      lift_2_b: {front: 19000, rear: 19010}
-      lift_3_c: {front: 19000, rear: 19010}
-      lift_4_d: {front: 19000, rear: 19010}
-      lift_5_e: {front: 19000, rear: 19010}
-      lift_6_f: {front: 19000, rear: 19010}
-      lift_7_g: {front: 19000, rear: 19010}
-      lift_8_h: {front: 19000, rear: 19010}
-
-  f_18:
-    level: 18
-    lifts:
-      lift_1_a: {front: 18000, rear: 18010}
-      lift_2_b: {front: 18000, rear: 18010}
-      lift_3_c: {front: 18000, rear: 18010}
-      lift_4_d: {front: 18000, rear: 18010}
-      lift_5_e: {front: 18000, rear: 18010}
-      lift_6_f: {front: 18000, rear: 18010}
-      lift_7_g: {front: 18000, rear: 18010}
-      lift_8_h: {front: 18000, rear: 18010}
-
-  f_17:
-    level: 17
-    lifts:
-      lift_1_a: {front: 17000, rear: 17010}
-      lift_2_b: {front: 17000, rear: 17010}
-      lift_3_c: {front: 17000, rear: 17010}
-      lift_4_d: {front: 17000, rear: 17010}
-      lift_5_e: {front: 17000, rear: 17010}
-      lift_6_f: {front: 17000, rear: 17010}
-      lift_7_g: {front: 17000, rear: 17010}
-      lift_8_h: {front: 17000, rear: 17010}
-
-  f_16:
-    level: 16
-    lifts:
-      lift_1_a: {front: 16000, rear: 16010}
-      lift_2_b: {front: 16000, rear: 16010}
-      lift_3_c: {front: 16000, rear: 16010}
-      lift_4_d: {front: 16000, rear: 16010}
-      lift_5_e: {front: 16000, rear: 16010}
-      lift_6_f: {front: 16000, rear: 16010}
-      lift_7_g: {front: 16000, rear: 16010}
-      lift_8_h: {front: 16000, rear: 16010}
-
-  f_15:
-    level: 15
-    lifts:
-      lift_1_a: {front: 15000, rear: 15010}
-      lift_2_b: {front: 15000, rear: 15010}
-      lift_3_c: {front: 15000, rear: 15010}
-      lift_4_d: {front: 15000, rear: 15010}
-      lift_5_e: {front: 15000, rear: 15010}
-      lift_6_f: {front: 15000, rear: 15010}
-      lift_7_g: {front: 15000, rear: 15010}
-      lift_8_h: {front: 15000, rear: 15010}
-
-  f_14:
-    level: 14
-    lifts:
-      lift_1_a: {front: 14000, rear: 14010}
-      lift_2_b: {front: 14000, rear: 14010}
-      lift_3_c: {front: 14000, rear: 14010}
-      lift_4_d: {front: 14000, rear: 14010}
-      lift_5_e: {front: 14000, rear: 14010}
-      lift_6_f: {front: 14000, rear: 14010}
-      lift_7_g: {front: 14000, rear: 14010}
-      lift_8_h: {front: 14000, rear: 14010}
-
-  f_13:
-    level: 13
-    lifts:
-      lift_1_a: {front: 13000, rear: 13010}
-      lift_2_b: {front: 13000, rear: 13010}
-      lift_3_c: {front: 13000, rear: 13010}
-      lift_4_d: {front: 13000, rear: 13010}
-      lift_5_e: {front: 13000, rear: 13010}
-      lift_6_f: {front: 13000, rear: 13010}
-      lift_7_g: {front: 13000, rear: 13010}
-      lift_8_h: {front: 13000, rear: 13010}
-
-  f_12:
-    level: 12
-    lifts:
-      lift_1_a: {front: 12000, rear: 12010}
-      lift_2_b: {front: 12000, rear: 12010}
-      lift_3_c: {front: 12000, rear: 12010}
-      lift_4_d: {front: 12000, rear: 12010}
-      lift_5_e: {front: 12000, rear: 12010}
-      lift_6_f: {front: 12000, rear: 12010}
-      lift_7_g: {front: 12000, rear: 12010}
-      lift_8_h: {front: 12000, rear: 12010}
-
-  f_11:
-    level: 11
-    lifts:
-      lift_1_a: {front: 11000, rear: 11010}
-      lift_2_b: {front: 11000, rear: 11010}
-      lift_3_c: {front: 11000, rear: 11010}
-      lift_4_d: {front: 11000, rear: 11010}
-      lift_5_e: {front: 11000, rear: 11010}
-      lift_6_f: {front: 11000, rear: 11010}
-      lift_7_g: {front: 11000, rear: 11010}
-      lift_8_h: {front: 11000, rear: 11010}
-
-  f_10:
-    level: 10
-    lifts:
-      lift_1_a: {front: 10000, rear: 10010}
-      lift_2_b: {front: 10000, rear: 10010}
-      lift_3_c: {front: 10000, rear: 10010}
-      lift_4_d: {front: 10000, rear: 10010}
-      lift_5_e: {front: 10000, rear: 10010}
-      lift_6_f: {front: 10000, rear: 10010}
-      lift_7_g: {front: 10000, rear: 10010}
-      lift_8_h: {front: 10000, rear: 10010}
-
-  f_9:
-    level: 9
-    lifts:
-      lift_1_a: {front: 9000, rear: 9010}
-      lift_2_b: {front: 9000, rear: 9010}
-      lift_3_c: {front: 9000, rear: 9010}
-      lift_4_d: {front: 9000, rear: 9010}
-      lift_5_e: {front: 9000, rear: 9010}
-      lift_6_f: {front: 9000, rear: 9010}
-      lift_7_g: {front: 9000, rear: 9010}
-      lift_8_h: {front: 9000, rear: 9010}
-
-  f_8:
-    level: 8
-    lifts:
-      lift_1_a: {front: 8000, rear: 8010}
-      lift_2_b: {front: 8000, rear: 8010}
-      lift_3_c: {front: 8000, rear: 8010}
-      lift_4_d: {front: 8000, rear: 8010}
-      lift_5_e: {front: 8000, rear: 8010}
-      lift_6_f: {front: 8000, rear: 8010}
-      lift_7_g: {front: 8000, rear: 8010}
-      lift_8_h: {front: 8000, rear: 8010}
-
-  f_7:
-    level: 7
-    lifts:
-      lift_1_a: {front: 7000, rear: 7010}
-      lift_2_b: {front: 7000, rear: 7010}
-      lift_3_c: {front: 7000, rear: 7010}
-      lift_4_d: {front: 7000, rear: 7010}
-      lift_5_e: {front: 7000, rear: 7010}
-      lift_6_f: {front: 7000, rear: 7010}
-      lift_7_g: {front: 7000, rear: 7010}
-      lift_8_h: {front: 7000, rear: 7010}
-
-  f_6:
-    level: 6
-    lifts:
-      lift_1_a: {front: 6000, rear: 6010}
-      lift_2_b: {front: 6000, rear: 6010}
-      lift_3_c: {front: 6000, rear: 6010}
-      lift_4_d: {front: 6000, rear: 6010}
-      lift_5_e: {front: 6000, rear: 6010}
-      lift_6_f: {front: 6000, rear: 6010}
-      lift_7_g: {front: 6000, rear: 6010}
-      lift_8_h: {front: 6000, rear: 6010}
-
-  f_5:
-    level: 5
-    lifts:
-      lift_1_a: {front: 5000, rear: 5010}
-      lift_2_b: {front: 5000, rear: 5010}
-      lift_3_c: {front: 5000, rear: 5010}
-      lift_4_d: {front: 5000, rear: 5010}
-      lift_5_e: {front: 5000, rear: 5010}
-      lift_6_f: {front: 5000, rear: 5010}
-      lift_7_g: {front: 5000, rear: 5010}
-      lift_8_h: {front: 5000, rear: 5010}
-
-  f_4:
-    level: 4
-    lifts:
-      lift_1_a: {front: 4000, rear: 4010}
-      lift_2_b: {front: 4000, rear: 4010}
-      lift_3_c: {front: 4000, rear: 4010}
-      lift_4_d: {front: 4000, rear: 4010}
-      lift_5_e: {front: 4000, rear: 4010}
-      lift_6_f: {front: 4000, rear: 4010}
-      lift_7_g: {front: 4000, rear: 4010}
-      lift_8_h: {front: 4000, rear: 4010}
-
-  f_3:
-    level: 3
-    lifts:
-      lift_1_a: {front: 3000, rear: 3010}
-      lift_2_b: {front: 3000, rear: 3010}
-      lift_3_c: {front: 3000, rear: 3010}
-      lift_4_d: {front: 3000, rear: 3010}
-      lift_5_e: {front: 3000, rear: 3010}
-      lift_6_f: {front: 3000, rear: 3010}
-      lift_7_g: {front: 3000, rear: 3010}
-      lift_8_h: {front: 3000, rear: 3010}
-
-  f_2:
-    level: 2
-    lifts:
-      lift_1_a: {front: 2000, rear: 2010}
-      lift_2_b: {front: 2000, rear: 2010}
-      lift_3_c: {front: 2000, rear: 2010}
-      lift_4_d: {front: 2000, rear: 2010}
-      lift_5_e: {front: 2000, rear: 2010}
-      lift_6_f: {front: 2000, rear: 2010}
-      lift_7_g: {front: 2000, rear: 2010}
-      lift_8_h: {front: 2000, rear: 2010}
-
   f_1:
+    areas:
+    - area_id: 1000
+      exit: true
+      short_name: '1'
+      side: 1
+    - area_id: 1010
+      exit: true
+      short_name: 1R
+      side: 2
     level: 1
-    lifts:
-      lift_1_a: {front: 1000, rear: 1010}
-      lift_2_b: {front: 1000, rear: 1010}
-      lift_3_c: {front: 1000, rear: 1010}
-      lift_4_d: {front: 1000, rear: 1010}
-      lift_5_e: {front: 1000, rear: 1010}
-      lift_6_f: {front: 1000, rear: 1010}
-      lift_7_g: {front: 1000, rear: 1010}
-      lift_8_h: {front: 1000, rear: 1010}
-
-# Special notations from the interface
-special_floors:
-  - "1, 2, 3"  # Bottom annotation in the interface
-
-# Floor ID pattern explanation:
-# - Regular floors: {floor_number}000 (front), {floor_number}010 (rear)
-# - Deck floors: 100{lift_number}{floor_number}0
-# - All lifts serve floors 1-39
-# - Deck 0 and Deck 1 have special ID patterns
-# - Lift 1-A appears to have limited access to top floors (deck levels)
+    short_name: '1'
+  f_10:
+    areas:
+    - area_id: 10000
+      exit: false
+      short_name: '10'
+      side: 1
+    - area_id: 10010
+      exit: false
+      short_name: 10R
+      side: 2
+    level: 10
+    short_name: '10'
+  f_11:
+    areas:
+    - area_id: 11000
+      exit: false
+      short_name: '11'
+      side: 1
+    - area_id: 11010
+      exit: false
+      short_name: 11R
+      side: 2
+    level: 11
+    short_name: '11'
+  f_12:
+    areas:
+    - area_id: 12000
+      exit: false
+      short_name: '12'
+      side: 1
+    - area_id: 12010
+      exit: false
+      short_name: 12R
+      side: 2
+    level: 12
+    short_name: '12'
+  f_13:
+    areas:
+    - area_id: 13000
+      exit: false
+      short_name: '13'
+      side: 1
+    - area_id: 13010
+      exit: false
+      short_name: 13R
+      side: 2
+    level: 13
+    short_name: '13'
+  f_14:
+    areas:
+    - area_id: 14000
+      exit: false
+      short_name: '14'
+      side: 1
+    - area_id: 14010
+      exit: false
+      short_name: 14R
+      side: 2
+    level: 14
+    short_name: '14'
+  f_15:
+    areas:
+    - area_id: 15000
+      exit: false
+      short_name: '15'
+      side: 1
+    - area_id: 15010
+      exit: false
+      short_name: 15R
+      side: 2
+    level: 15
+    short_name: '15'
+  f_16:
+    areas:
+    - area_id: 16000
+      exit: false
+      short_name: '16'
+      side: 1
+    - area_id: 16010
+      exit: false
+      short_name: 16R
+      side: 2
+    level: 16
+    short_name: '16'
+  f_17:
+    areas:
+    - area_id: 17000
+      exit: false
+      short_name: '17'
+      side: 1
+    - area_id: 17010
+      exit: false
+      short_name: 17R
+      side: 2
+    level: 17
+    short_name: '17'
+  f_18:
+    areas:
+    - area_id: 18000
+      exit: false
+      short_name: '18'
+      side: 1
+    - area_id: 18010
+      exit: false
+      short_name: 18R
+      side: 2
+    level: 18
+    short_name: '18'
+  f_19:
+    areas:
+    - area_id: 19000
+      exit: false
+      short_name: '19'
+      side: 1
+    - area_id: 19010
+      exit: false
+      short_name: 19R
+      side: 2
+    level: 19
+    short_name: '19'
+  f_2:
+    areas:
+    - area_id: 2000
+      exit: false
+      short_name: '2'
+      side: 1
+    - area_id: 2010
+      exit: false
+      short_name: 2R
+      side: 2
+    level: 2
+    short_name: '2'
+  f_20:
+    areas:
+    - area_id: 20000
+      exit: false
+      short_name: '20'
+      side: 1
+    - area_id: 20010
+      exit: false
+      short_name: 20R
+      side: 2
+    level: 20
+    short_name: '20'
+  f_21:
+    areas:
+    - area_id: 21000
+      exit: false
+      short_name: '21'
+      side: 1
+    - area_id: 21010
+      exit: false
+      short_name: 21R
+      side: 2
+    level: 21
+    short_name: '21'
+  f_22:
+    areas:
+    - area_id: 22000
+      exit: false
+      short_name: '22'
+      side: 1
+    - area_id: 22010
+      exit: false
+      short_name: 22R
+      side: 2
+    level: 22
+    short_name: '22'
+  f_23:
+    areas:
+    - area_id: 23000
+      exit: false
+      short_name: '23'
+      side: 1
+    - area_id: 23010
+      exit: false
+      short_name: 23R
+      side: 2
+    level: 23
+    short_name: '23'
+  f_24:
+    areas:
+    - area_id: 24000
+      exit: false
+      short_name: '24'
+      side: 1
+    - area_id: 24010
+      exit: false
+      short_name: 24R
+      side: 2
+    level: 24
+    short_name: '24'
+  f_25:
+    areas:
+    - area_id: 25000
+      exit: false
+      short_name: '25'
+      side: 1
+    - area_id: 25010
+      exit: false
+      short_name: 25R
+      side: 2
+    level: 25
+    short_name: '25'
+  f_26:
+    areas:
+    - area_id: 26000
+      exit: false
+      short_name: '26'
+      side: 1
+    - area_id: 26010
+      exit: false
+      short_name: 26R
+      side: 2
+    level: 26
+    short_name: '26'
+  f_27:
+    areas:
+    - area_id: 27000
+      exit: false
+      short_name: '27'
+      side: 1
+    - area_id: 27010
+      exit: false
+      short_name: 27R
+      side: 2
+    level: 27
+    short_name: '27'
+  f_28:
+    areas:
+    - area_id: 28000
+      exit: false
+      short_name: '28'
+      side: 1
+    - area_id: 28010
+      exit: false
+      short_name: 28R
+      side: 2
+    level: 28
+    short_name: '28'
+  f_29:
+    areas:
+    - area_id: 29000
+      exit: false
+      short_name: '29'
+      side: 1
+    - area_id: 29010
+      exit: false
+      short_name: 29R
+      side: 2
+    level: 29
+    short_name: '29'
+  f_3:
+    areas:
+    - area_id: 3000
+      exit: false
+      short_name: '3'
+      side: 1
+    - area_id: 3010
+      exit: false
+      short_name: 3R
+      side: 2
+    level: 3
+    short_name: '3'
+  f_30:
+    areas:
+    - area_id: 30000
+      exit: false
+      short_name: '30'
+      side: 1
+    - area_id: 30010
+      exit: false
+      short_name: 30R
+      side: 2
+    level: 30
+    short_name: '30'
+  f_31:
+    areas:
+    - area_id: 31000
+      exit: false
+      short_name: '31'
+      side: 1
+    - area_id: 31010
+      exit: false
+      short_name: 31R
+      side: 2
+    level: 31
+    short_name: '31'
+  f_32:
+    areas:
+    - area_id: 32000
+      exit: false
+      short_name: '32'
+      side: 1
+    - area_id: 32010
+      exit: false
+      short_name: 32R
+      side: 2
+    level: 32
+    short_name: '32'
+  f_33:
+    areas:
+    - area_id: 33000
+      exit: false
+      short_name: '33'
+      side: 1
+    - area_id: 33010
+      exit: false
+      short_name: 33R
+      side: 2
+    level: 33
+    short_name: '33'
+  f_34:
+    areas:
+    - area_id: 34000
+      exit: false
+      short_name: '34'
+      side: 1
+    - area_id: 34010
+      exit: false
+      short_name: 34R
+      side: 2
+    level: 34
+    short_name: '34'
+  f_35:
+    areas:
+    - area_id: 35000
+      exit: false
+      short_name: '35'
+      side: 1
+    - area_id: 35010
+      exit: false
+      short_name: 35R
+      side: 2
+    level: 35
+    short_name: '35'
+  f_36:
+    areas:
+    - area_id: 36000
+      exit: false
+      short_name: '36'
+      side: 1
+    - area_id: 36010
+      exit: false
+      short_name: 36R
+      side: 2
+    level: 36
+    short_name: '36'
+  f_37:
+    areas:
+    - area_id: 37000
+      exit: false
+      short_name: '37'
+      side: 1
+    - area_id: 37010
+      exit: false
+      short_name: 37R
+      side: 2
+    level: 37
+    short_name: '37'
+  f_38:
+    areas:
+    - area_id: 38000
+      exit: false
+      short_name: '38'
+      side: 1
+    - area_id: 38010
+      exit: false
+      short_name: 38R
+      side: 2
+    level: 38
+    short_name: '38'
+  f_39:
+    areas:
+    - area_id: 39000
+      exit: false
+      short_name: '39'
+      side: 1
+    - area_id: 39010
+      exit: false
+      short_name: 39R
+      side: 2
+    level: 39
+    short_name: '39'
+  f_4:
+    areas:
+    - area_id: 4000
+      exit: false
+      short_name: '4'
+      side: 1
+    - area_id: 4010
+      exit: false
+      short_name: 4R
+      side: 2
+    level: 4
+    short_name: '4'
+  f_40:
+    areas:
+    - area_id: 40000
+      exit: false
+      short_name: '40'
+      side: 1
+    - area_id: 40010
+      exit: false
+      short_name: 40R
+      side: 2
+    level: 40
+    short_name: '40'
+  f_41:
+    areas:
+    - area_id: 41000
+      exit: false
+      short_name: '41'
+      side: 1
+    - area_id: 41010
+      exit: false
+      short_name: 41R
+      side: 2
+    level: 41
+    short_name: '41'
+  f_42:
+    areas:
+    - area_id: 42000
+      exit: false
+      short_name: '42'
+      side: 1
+    - area_id: 42010
+      exit: false
+      short_name: 42R
+      side: 2
+    level: 42
+    short_name: '42'
+  f_43:
+    areas:
+    - area_id: 43000
+      exit: false
+      short_name: '43'
+      side: 1
+    - area_id: 43010
+      exit: false
+      short_name: 43R
+      side: 2
+    level: 43
+    short_name: '43'
+  f_44:
+    areas:
+    - area_id: 44000
+      exit: false
+      short_name: '44'
+      side: 1
+    - area_id: 44010
+      exit: false
+      short_name: 44R
+      side: 2
+    level: 44
+    short_name: '44'
+  f_45:
+    areas:
+    - area_id: 45000
+      exit: false
+      short_name: '45'
+      side: 1
+    - area_id: 45010
+      exit: false
+      short_name: 45R
+      side: 2
+    level: 45
+    short_name: '45'
+  f_46:
+    areas:
+    - area_id: 46000
+      exit: false
+      short_name: '46'
+      side: 1
+    - area_id: 46010
+      exit: false
+      short_name: 46R
+      side: 2
+    level: 46
+    short_name: '46'
+  f_47:
+    areas:
+    - area_id: 47000
+      exit: false
+      short_name: '47'
+      side: 1
+    - area_id: 47010
+      exit: false
+      short_name: 47R
+      side: 2
+    level: 47
+    short_name: '47'
+  f_48:
+    areas:
+    - area_id: 48000
+      exit: false
+      short_name: '48'
+      side: 1
+    - area_id: 48010
+      exit: false
+      short_name: 48R
+      side: 2
+    level: 48
+    short_name: '48'
+  f_49:
+    areas:
+    - area_id: 49000
+      exit: false
+      short_name: '49'
+      side: 1
+    - area_id: 49010
+      exit: false
+      short_name: 49R
+      side: 2
+    level: 49
+    short_name: '49'
+  f_5:
+    areas:
+    - area_id: 5000
+      exit: false
+      short_name: '5'
+      side: 1
+    - area_id: 5010
+      exit: false
+      short_name: 5R
+      side: 2
+    level: 5
+    short_name: '5'
+  f_50:
+    areas:
+    - area_id: 50000
+      exit: false
+      short_name: '50'
+      side: 1
+    - area_id: 50010
+      exit: false
+      short_name: 50R
+      side: 2
+    level: 50
+    short_name: '50'
+  f_51:
+    areas:
+    - area_id: 51000
+      exit: false
+      short_name: '51'
+      side: 1
+    - area_id: 51010
+      exit: false
+      short_name: 51R
+      side: 2
+    level: 51
+    short_name: '51'
+  f_52:
+    areas:
+    - area_id: 52000
+      exit: false
+      short_name: '52'
+      side: 1
+    - area_id: 52010
+      exit: false
+      short_name: 52R
+      side: 2
+    level: 52
+    short_name: '52'
+  f_53:
+    areas:
+    - area_id: 53000
+      exit: false
+      short_name: '53'
+      side: 1
+    - area_id: 53010
+      exit: false
+      short_name: 53R
+      side: 2
+    level: 53
+    short_name: '53'
+  f_54:
+    areas:
+    - area_id: 54000
+      exit: false
+      short_name: '54'
+      side: 1
+    - area_id: 54010
+      exit: false
+      short_name: 54R
+      side: 2
+    level: 54
+    short_name: '54'
+  f_55:
+    areas:
+    - area_id: 55000
+      exit: false
+      short_name: '55'
+      side: 1
+    - area_id: 55010
+      exit: false
+      short_name: 55R
+      side: 2
+    level: 55
+    short_name: '55'
+  f_56:
+    areas:
+    - area_id: 56000
+      exit: false
+      short_name: '56'
+      side: 1
+    - area_id: 56010
+      exit: false
+      short_name: 56R
+      side: 2
+    level: 56
+    short_name: '56'
+  f_57:
+    areas:
+    - area_id: 57000
+      exit: false
+      short_name: '57'
+      side: 1
+    - area_id: 57010
+      exit: false
+      short_name: 57R
+      side: 2
+    level: 57
+    short_name: '57'
+  f_58:
+    areas:
+    - area_id: 58000
+      exit: false
+      short_name: '58'
+      side: 1
+    - area_id: 58010
+      exit: false
+      short_name: 58R
+      side: 2
+    level: 58
+    short_name: '58'
+  f_59:
+    areas:
+    - area_id: 59000
+      exit: false
+      short_name: '59'
+      side: 1
+    - area_id: 59010
+      exit: false
+      short_name: 59R
+      side: 2
+    level: 59
+    short_name: '59'
+  f_6:
+    areas:
+    - area_id: 6000
+      exit: false
+      short_name: '6'
+      side: 1
+    - area_id: 6010
+      exit: false
+      short_name: 6R
+      side: 2
+    level: 6
+    short_name: '6'
+  f_60:
+    areas:
+    - area_id: 60000
+      exit: false
+      short_name: '60'
+      side: 1
+    - area_id: 60010
+      exit: false
+      short_name: 60R
+      side: 2
+    level: 60
+    short_name: '60'
+  f_61:
+    areas:
+    - area_id: 61000
+      exit: false
+      short_name: '61'
+      side: 1
+    - area_id: 61010
+      exit: false
+      short_name: 61R
+      side: 2
+    level: 61
+    short_name: '61'
+  f_62:
+    areas:
+    - area_id: 62000
+      exit: false
+      short_name: '62'
+      side: 1
+    - area_id: 62010
+      exit: false
+      short_name: 62R
+      side: 2
+    level: 62
+    short_name: '62'
+  f_63:
+    areas:
+    - area_id: 63000
+      exit: false
+      short_name: '63'
+      side: 1
+    - area_id: 63010
+      exit: false
+      short_name: 63R
+      side: 2
+    level: 63
+    short_name: '63'
+  f_7:
+    areas:
+    - area_id: 7000
+      exit: false
+      short_name: '7'
+      side: 1
+    - area_id: 7010
+      exit: false
+      short_name: 7R
+      side: 2
+    level: 7
+    short_name: '7'
+  f_8:
+    areas:
+    - area_id: 8000
+      exit: false
+      short_name: '8'
+      side: 1
+    - area_id: 8010
+      exit: false
+      short_name: 8R
+      side: 2
+    level: 8
+    short_name: '8'
+  f_9:
+    areas:
+    - area_id: 9000
+      exit: false
+      short_name: '9'
+      side: 1
+    - area_id: 9010
+      exit: false
+      short_name: 9R
+      side: 2
+    level: 9
+    short_name: '9'

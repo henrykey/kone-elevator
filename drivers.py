@@ -675,9 +675,39 @@ class KoneDriver(ElevatorDriver):
         """获取电梯模式/状态 - 简化版本返回操作状态，包含建筑ID验证"""
         self._ensure_async_objects()
         try:
-            # 验证建筑ID是否有效 (模拟验证逻辑)
-            valid_building_ids = ['L1QinntdEOg', 'building:L1QinntdEOg']
-            if building_id not in valid_building_ids and not building_id.startswith('building:L1QinntdEOg'):
+            # 验证建筑ID是否有效 - 动态从配置文件读取或使用通用验证
+            valid_building_ids = []
+            
+            # 尝试从配置文件获取有效的建筑ID
+            try:
+                import yaml
+                with open('virtual_building_config.yml', 'r') as f:
+                    config = yaml.safe_load(f)
+                    config_building_id = config.get('building', {}).get('id', '')
+                    if config_building_id:
+                        valid_building_ids.extend([
+                            config_building_id,
+                            f'building:{config_building_id}'
+                        ])
+            except:
+                pass
+            
+            # 添加默认的有效建筑ID
+            default_building_ids = ['L1QinntdEOg', 'building:L1QinntdEOg', 
+                                   '4TFxWRCv23D', 'building:4TFxWRCv23D',
+                                   'fWlfHyPlaca', 'building:fWlfHyPlaca',
+                                   'HxKjGc3knnh', 'building:HxKjGc3knnh',
+                                   'jSqCXuwqmjw', 'building:jSqCXuwqmjw']
+            valid_building_ids.extend(default_building_ids)
+            
+            # 验证建筑ID格式 - 支持更灵活的验证
+            building_id_clean = building_id.replace('building:', '') if building_id.startswith('building:') else building_id
+            
+            is_valid = (building_id in valid_building_ids or 
+                       building_id_clean in valid_building_ids or
+                       any(building_id.startswith(f'building:{bid}') for bid in [b.replace('building:', '') for b in valid_building_ids]))
+            
+            if not is_valid:
                 result = {
                     'success': False,
                     'status_code': 400,
