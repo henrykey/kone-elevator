@@ -249,10 +249,13 @@ class KoneValidationTestCoordinator:
                 from test_case_mapper import TestCaseMapper
                 from building_data_manager import BuildingDataManager
                 
+                # 获取正确的building_id
+                building_id = self.building_config.get('building', {}).get('id', 'L1QinntdEOg')
+                
                 # 准备阶段1的数据传递给阶段2
                 phase1_data = {
                     "building_manager": BuildingDataManager(self.config_path),
-                    "test_mapper": TestCaseMapper(),
+                    "test_mapper": TestCaseMapper(building_id),
                     "test_filter": test_cases  # 传递测试过滤器
                 }
                 
@@ -297,10 +300,13 @@ class KoneValidationTestCoordinator:
                 
                 # 只有当阶段2成功时才执行报告生成
                 if validation_result["phases"]["phase_2"].get("status") == "COMPLETED":
+                    # 获取正确的building_id  
+                    building_id = self.building_config.get('building', {}).get('id', 'L1QinntdEOg')
+                    
                     # 准备阶段1的数据传递给阶段3，包含报告生成器
                     phase1_data_for_phase3 = {
                         "building_manager": BuildingDataManager(self.config_path),
-                        "test_mapper": TestCaseMapper(),
+                        "test_mapper": TestCaseMapper(building_id),
                         "report_generator": ReportGenerator(),
                         "test_filter": test_cases  # 报告生成也需要知道过滤器
                     }
@@ -433,10 +439,13 @@ class KoneValidationTestCoordinator:
                 from test_case_mapper import TestCaseMapper
                 from building_data_manager import BuildingDataManager
                 
+                # 获取正确的building_id
+                building_id = self.building_config.get('building', {}).get('id', 'L1QinntdEOg')
+                
                 # 准备阶段1的数据传递给阶段2 - 创建实际实例
                 phase1_data = {
                     "building_manager": BuildingDataManager(self.config_path),
-                    "test_mapper": TestCaseMapper(),
+                    "test_mapper": TestCaseMapper(building_id),
                 }
                 
                 phase2_result = await phase_2_core_tests(phase1_data, self.api_base_url)
@@ -470,10 +479,13 @@ class KoneValidationTestCoordinator:
                 
                 # 只有当阶段2成功时才执行报告生成
                 if validation_result["phases"]["phase_2"].get("status") == "COMPLETED":
+                    # 获取正确的building_id
+                    building_id = self.building_config.get('building', {}).get('id', 'L1QinntdEOg')
+                    
                     # 准备阶段1的数据传递给阶段3，包含报告生成器
                     phase1_data_for_phase3 = {
                         "building_manager": BuildingDataManager(self.config_path),
-                        "test_mapper": TestCaseMapper(),
+                        "test_mapper": TestCaseMapper(building_id),
                         "report_generator": ReportGenerator()
                     }
                     

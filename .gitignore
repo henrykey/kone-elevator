@@ -5,7 +5,29 @@ Service Robot API solution validation test guide version 2.docx
 # 排除demo报告目录
 demo_reports/
 
+# 排除生成的报告文件
+KONE_Validation_Report_*.html
+KONE_Validation_Report_*.json
+KONE_Validation_Report_*.md
+KONE_Validation_Report_*.xlsx
+reports/
+test_reports/
+full_test_reports/
+kone_validation_results.json
+
 # 排除日志文件
 *.log
 .vscode/launch.json
 kone-ping
+
+# 排除临时测试文件
+test_*_direct.py
+test_*_websocket.py
+test_correct_*.py
+test_driver_*.py
+test_final_*.py
+test_fixed_*.py
+test_floor_*.py
+test_multiple_*.py
+test_source_*.py
+diagnose_*.py

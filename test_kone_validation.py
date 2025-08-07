@@ -11,7 +11,9 @@ Version: 2.0.1
 import asyncio
 import httpx
 import json
+import logging
 import time
+import yaml
 from datetime import datetime
 from typing import Dict, List, Any
 import logging
@@ -32,11 +34,22 @@ class KoneValidationTester:
     
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
-        self.building_id = "building:9990000951"
+        # 从配置文件读取building_id
+        self.building_id = self._load_building_id()
         self.group_id = "1"
         self.terminal_id = 1
         self.test_results = []
         self.session_id = None
+        
+    def _load_building_id(self) -> str:
+        """从配置文件加载building_id"""
+        try:
+            with open('virtual_building_config.yml', 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            return config.get('building', {}).get('id', 'L1QinntdEOg')
+        except Exception as e:
+            logger.warning(f"Failed to load building config: {e}, using default")
+            return 'L1QinntdEOg'
         
     async def setup(self):
         """测试环境初始化"""
@@ -130,6 +143,9 @@ class KoneValidationTester:
         # Test 2: 基本目的地呼叫
         call_data = {
             "building_id": self.building_id,
+            "from_floor": 3,
+            "to_floor": 5,
+            "user_id": "test_user_002",
             "source": 3000,
             "destination": 5000,
             "action_id": 2,
@@ -188,6 +204,9 @@ class KoneValidationTester:
         # Test 5: 相同楼层错误
         call_data = {
             "building_id": self.building_id,
+            "from_floor": 3,
+            "to_floor": 3,  # 相同楼层
+            "user_id": "test_user_005",
             "source": 3000,
             "destination": 3000,  # 相同楼层
             "action_id": 2,
@@ -209,6 +228,9 @@ class KoneValidationTester:
         # Test 6: 无效延迟参数
         call_data = {
             "building_id": self.building_id,
+            "from_floor": 3,
+            "to_floor": 5,
+            "user_id": "test_user_006",
             "source": 3000,
             "destination": 5000,
             "delay": 45,  # 超过30秒限制
@@ -231,6 +253,9 @@ class KoneValidationTester:
         # Test 7: 无效群组大小
         call_data = {
             "building_id": self.building_id,
+            "from_floor": 3,
+            "to_floor": 5,
+            "user_id": "test_user_007",
             "source": 3000,
             "destination": 5000,
             "group_size": 150,  # 超过100人限制
@@ -257,6 +282,9 @@ class KoneValidationTester:
         # 先发起一个呼叫用于取消
         call_data = {
             "building_id": self.building_id,
+            "from_floor": 3,
+            "to_floor": 5,
+            "user_id": "test_user_008",
             "source": 3000,
             "destination": 5000,
             "action_id": 2,
@@ -367,31 +395,31 @@ class KoneValidationTester:
             {
                 "id": "Test-013",
                 "name": "多楼层跨越呼叫",
-                "data": {"building_id": self.building_id, "source": 3000, "destination": 7000, "action_id": 2, "group_id": self.group_id},
+                "data": {"building_id": self.building_id, "from_floor": 3, "to_floor": 7, "user_id": "test_user_013", "source": 3000, "destination": 7000, "action_id": 2, "group_id": self.group_id},
                 "description": "测试跨越多个楼层的长距离呼叫"
             },
             {
                 "id": "Test-014", 
                 "name": "带语言偏好的呼叫",
-                "data": {"building_id": self.building_id, "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "language": "zh-CN"},
+                "data": {"building_id": self.building_id, "from_floor": 3, "to_floor": 5, "user_id": "test_user_014", "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "language": "zh-CN"},
                 "description": "测试多语言支持功能"
             },
             {
                 "id": "Test-015",
                 "name": "高优先级呼叫",
-                "data": {"building_id": self.building_id, "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "priority": "HIGH"},
+                "data": {"building_id": self.building_id, "from_floor": 3, "to_floor": 5, "user_id": "test_user_015", "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "priority": "HIGH"},
                 "description": "测试高优先级呼叫处理"
             },
             {
                 "id": "Test-016",
                 "name": "指定电梯呼叫",
-                "data": {"building_id": self.building_id, "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "allowed_lifts": [1001010]},
+                "data": {"building_id": self.building_id, "from_floor": 3, "to_floor": 5, "user_id": "test_user_016", "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "allowed_lifts": [1001010]},
                 "description": "测试指定特定电梯的呼叫"
             },
             {
                 "id": "Test-017",
                 "name": "大群组呼叫",
-                "data": {"building_id": self.building_id, "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "group_size": 8},
+                "data": {"building_id": self.building_id, "from_floor": 3, "to_floor": 5, "user_id": "test_user_017", "source": 3000, "destination": 5000, "action_id": 2, "group_id": self.group_id, "group_size": 8},
                 "description": "测试大群组（8人）呼叫"
             }
         ]
@@ -430,7 +458,7 @@ class KoneValidationTester:
                 "id": "Test-027",
                 "name": "无效建筑ID格式",
                 "endpoint": "/api/elevator/call",
-                "data": {"building_id": "invalid_format", "source": 3000, "destination": 5000, "action_id": 2},
+                "data": {"building_id": "invalid_format", "from_floor": 3, "to_floor": 5, "user_id": "test_user_027", "source": 3000, "destination": 5000, "action_id": 2},
                 "method": "POST",
                 "description": "测试无效建筑ID格式的错误处理"
             },
@@ -438,7 +466,7 @@ class KoneValidationTester:
                 "id": "Test-028",
                 "name": "缺少必需参数",
                 "endpoint": "/api/elevator/call",
-                "data": {"building_id": self.building_id, "source": 3000},  # 缺少destination
+                "data": {"building_id": self.building_id, "from_floor": 3, "to_floor": 5, "user_id": "test_user_028", "source": 3000},  # 缺少destination
                 "method": "POST",
                 "description": "测试缺少必需参数的错误处理"
             }

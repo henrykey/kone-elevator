@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from drivers import ElevatorDriver, ElevatorDriverFactory, ElevatorCallRequest
+from building_data_manager import BuildingDataManager
 import logging
 import yaml
 from typing import Dict, Optional
@@ -25,17 +26,19 @@ def load_config():
 config = load_config()
 api_config = config.get('api', {})
 
+# 初始化建筑数据管理器
+building_manager = BuildingDataManager()
+
 app = FastAPI(
     title=api_config.get('title', 'Elevator Control API v2.0'),
     description=api_config.get('description', 'WebSocket-based elevator control service following KONE SR-API v2.0'),
     version="2.0.0"
 )
 
-# 初始化驱动
-drivers: Dict[str, ElevatorDriver] = ElevatorDriverFactory.create_from_config()
-
 def get_driver(elevator_type: str = Query('kone', description="Elevator type")) -> ElevatorDriver:
     """获取电梯驱动依赖"""
+    # 为每个请求创建新的驱动实例，避免事件循环冲突
+    drivers = ElevatorDriverFactory.create_from_config()
     driver = drivers.get(elevator_type.lower())
     if not driver:
         raise HTTPException(
@@ -47,11 +50,13 @@ def get_driver(elevator_type: str = Query('kone', description="Elevator type")) 
 @app.get("/")
 async def root():
     """根端点，返回API信息"""
+    # 获取可用的驱动类型
+    temp_drivers = ElevatorDriverFactory.create_from_config()
     return {
         "name": "Elevator Control API v2.0",
         "version": "2.0.0",
         "description": "WebSocket-based elevator control service following KONE SR-API v2.0",
-        "supported_types": list(drivers.keys()),
+        "supported_types": list(temp_drivers.keys()),
         "endpoints": {
             "initialize": "/api/elevator/initialize",
             "call": "/api/elevator/call",
@@ -97,8 +102,26 @@ async def elevator_call(
 ):
     """发起电梯呼叫"""
     try:
-        # 验证请求参数
-        if request.source == request.destination:
+        # 验证楼层是否有效
+        valid_floors = building_manager.get_valid_floors()
+        source_area = request.source or (request.from_floor * 1000)
+        dest_area = request.destination or (request.to_floor * 1000)
+        
+        if source_area not in valid_floors or dest_area not in valid_floors:
+            error_result = {
+                'success': False,
+                'status_code': 400,
+                'error': 'INVALID_FLOOR_AREA_ID'
+            }
+            logger.error(f"Invalid floor validation failed: {error_result}")
+            return JSONResponse(status_code=400, content=error_result)
+        
+        # 验证请求参数 - 修复None == None的问题
+        # 计算实际的源和目标区域
+        actual_source = request.source or (request.from_floor * 1000)
+        actual_destination = request.destination or (request.to_floor * 1000)
+        
+        if actual_source == actual_destination:
             error_result = {
                 'success': False,
                 'status_code': 400,
@@ -269,8 +292,9 @@ async def elevator_ping(
 @app.get("/api/elevator/status")
 async def get_available_types():
     """获取可用的电梯类型和状态"""
+    temp_drivers = ElevatorDriverFactory.create_from_config()
     status = {}
-    for elevator_type, driver in drivers.items():
+    for elevator_type, driver in temp_drivers.items():
         try:
             # 尝试检查连接状态
             status[elevator_type] = {
@@ -293,13 +317,8 @@ async def get_available_types():
 async def shutdown_event():
     """应用关闭时清理资源"""
     logger.info("Shutting down elevator control service...")
-    for elevator_type, driver in drivers.items():
-        try:
-            if hasattr(driver, 'close'):
-                await driver.close()
-            logger.info(f"Closed {elevator_type} driver")
-        except Exception as e:
-            logger.error(f"Error closing {elevator_type} driver: {e}")
+    # 注意：由于我们现在为每个请求创建驱动，这里不需要关闭全局驱动
+    # 每个驱动会在请求结束时自动清理
 
 if __name__ == "__main__":
     import uvicorn

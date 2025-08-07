@@ -529,7 +529,11 @@ async def _execute_single_test(client: httpx.AsyncClient,
         if test_config.http_method.value == "GET":
             response = await client.get(url, params=params)
         elif test_config.http_method.value == "POST":
-            response = await client.post(url, json=params)
+            # 特殊处理取消功能 - 使用查询参数而不是JSON body
+            if test_config.endpoint == "/api/elevator/cancel":
+                response = await client.post(url, params=params)
+            else:
+                response = await client.post(url, json=params)
         else:
             raise Exception(f"Unsupported HTTP method: {test_config.http_method.value}")
         
