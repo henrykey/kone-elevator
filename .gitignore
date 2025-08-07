@@ -19,6 +19,7 @@ kone_validation_results.json
 *.log
 .vscode/launch.json
 kone-ping
+arc
 
 # 排除临时测试文件
 test_*_direct.py
