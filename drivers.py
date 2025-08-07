@@ -533,8 +533,6 @@ class KoneDriver(ElevatorDriver):
                 }
                 logger.error(f"Call failed: {result}")
                 return result
-                }
-            }
             
             # 如果有延迟参数，添加到payload中
             if request.delay and request.delay > 0:
