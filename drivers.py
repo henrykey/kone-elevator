@@ -205,7 +205,7 @@ class KoneDriver(ElevatorDriver):
             
             response = requests.post(
                 self.token_endpoint,
-                data={'grant_type': 'client_credentials'},
+                data={'grant_type': 'client_credentials', 'scope': 'application/inventory callgiving/*'},
                 headers={
                     'Authorization': f'Basic {encoded_credentials}',
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -316,6 +316,8 @@ class KoneDriver(ElevatorDriver):
                 try:
                     message = await asyncio.wait_for(self.websocket.recv(), timeout=70)
                     data = json.loads(message)
+                    # Log all incoming WebSocket messages (IBC-AI CO.)
+                    logger.info(f"WebSocket received message: {json.dumps(data, indent=2)}")
                     await self._handle_message(data)
                 except asyncio.TimeoutError:
                     logger.warning("WebSocket receive timeout, sending ping")
@@ -339,6 +341,18 @@ class KoneDriver(ElevatorDriver):
                 future = self.pending_requests.pop(request_id)
                 if not future.done():
                     future.set_result(data)
+            
+            # Handle ping responses without requestId (IBC-AI CO.)
+            elif (data.get('type') == 'common-api' and 
+                  data.get('callType') == 'ping' and 
+                  not request_id):
+                # Find and resolve any pending ping request (IBC-AI CO.)
+                for pending_id, future in list(self.pending_requests.items()):
+                    if not future.done():
+                        future.set_result(data)
+                        self.pending_requests.pop(pending_id, None)
+                        logger.info(f"Resolved ping response without requestId for {pending_id} (IBC-AI CO.)")
+                        break
             
             # 记录所有消息用于调试
             logger.info(f"Received message: {json.dumps(data, indent=2)}")
@@ -665,7 +679,7 @@ class KoneDriver(ElevatorDriver):
             return result
 
     async def ping(self, building_id: str) -> dict:
-        """Ping建筑以检查连接性"""
+        """Ping建筑以检查连接性 - 模仿TypeScript示例的方法 (IBC-AI CO.)"""
         try:
             if not self.websocket or self.websocket.closed:
                 init_result = await self.initialize()
@@ -675,6 +689,7 @@ class KoneDriver(ElevatorDriver):
             # 确保buildingId符合v2规范格式: building:${buildingId}
             formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
             
+            # 模仿TypeScript示例：不使用顶层requestId (IBC-AI CO.)
             ping_msg = {
                 "type": "common-api",
                 "buildingId": formatted_building_id,
@@ -686,28 +701,45 @@ class KoneDriver(ElevatorDriver):
             }
             
             start_time = datetime.now()
-            response = await self._send_message(ping_msg, timeout=10)
-            end_time = datetime.now()
             
-            if response.get('statusCode') == 200:
-                latency = (end_time - start_time).total_seconds() * 1000
-                result = {
-                    'success': True,
-                    'status_code': 200,
-                    'latency_ms': round(latency, 2),
-                    'server_time': response.get('server_time'),
-                    'message': 'Ping successful'
-                }
-                logger.info(f"Ping successful: {building_id}, latency: {latency}ms")
-                return result
-            else:
-                result = {
-                    'success': False,
-                    'status_code': response.get('status', 500),
-                    'error': response.get('error', 'Ping failed')
-                }
-                logger.error(f"Ping failed: {result}")
-                return result
+            # 直接发送消息，不等待_send_message的响应匹配 (IBC-AI CO.)
+            async with self.connection_lock:
+                if not await self._connect_websocket():
+                    raise Exception("Failed to establish WebSocket connection")
+                
+                await self.websocket.send(json.dumps(ping_msg))
+                logger.info(f"Sent ping message: {json.dumps(ping_msg, indent=2)}")
+                
+                # 等待ping响应消息 (IBC-AI CO.)
+                timeout_duration = 60
+                try:
+                    while True:
+                        response_msg = await asyncio.wait_for(self.message_queue.get(), timeout=timeout_duration)
+                        
+                        # 检查是否是ping响应 (IBC-AI CO.)
+                        if (response_msg.get('type') == 'common-api' and 
+                            response_msg.get('callType') == 'ping'):
+                            end_time = datetime.now()
+                            latency = (end_time - start_time).total_seconds() * 1000
+                            
+                            result = {
+                                'success': True,
+                                'status_code': response_msg.get('statusCode', 200),
+                                'latency_ms': round(latency, 2),
+                                'server_time': response_msg.get('server_time'),
+                                'message': 'Ping successful'
+                            }
+                            logger.info(f"Ping successful: {building_id}, latency: {latency}ms")
+                            return result
+                            
+                except asyncio.TimeoutError:
+                    result = {
+                        'success': False,
+                        'status_code': 408,
+                        'error': f'Ping timeout after {timeout_duration}s'
+                    }
+                    logger.error(f"Ping timeout: {result}")
+                    return result
                 
         except Exception as e:
             result = {

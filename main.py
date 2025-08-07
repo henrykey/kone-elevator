@@ -24,7 +24,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 # 导入项目模块
 from test_coordinator import KoneValidationTestCoordinator
@@ -78,16 +78,30 @@ def print_system_info(args):
     print(f"   配置文件: {args.config}")
     print(f"   详细日志: {'启用' if args.verbose else '禁用'}")
     print(f"   输出目录: {args.output_dir}")
+    print(f"   执行模式: {args.mode}")
+    
+    # 显示要执行的测试用例
+    if hasattr(args, 'tests') and args.tests:
+        try:
+            test_cases = parse_test_cases(args.tests)
+            test_summary = format_test_list(test_cases)
+            print(f"   测试范围: {test_summary} (共{len(test_cases)}项)")
+        except ValueError as e:
+            print(f"   测试范围: ❌ 格式错误 - {e}")
+    else:
+        print("   测试范围: 全部37项测试")
+    
     print()
 
 
-async def run_coordinated_validation(api_url: str, config_path: str) -> Dict[str, Any]:
+async def run_coordinated_validation(api_url: str, config_path: str, test_cases: List[int] = None) -> Dict[str, Any]:
     """
     运行协调式验证（使用TestCoordinator）
     
     Args:
         api_url: API服务地址
         config_path: 配置文件路径
+        test_cases: 指定要执行的测试用例列表，None表示执行全部
         
     Returns:
         dict: 验证结果
@@ -95,24 +109,39 @@ async def run_coordinated_validation(api_url: str, config_path: str) -> Dict[str
     logger = logging.getLogger(__name__)
     logger.info("🚀 Starting coordinated validation using TestCoordinator...")
     
+    if test_cases:
+        logger.info(f"📋 Will execute {len(test_cases)} specific tests: {format_test_list(test_cases)}")
+    
     async with KoneValidationTestCoordinator(api_url, config_path) as coordinator:
-        result = await coordinator.run_full_validation()
+        if test_cases:
+            # 检查是否支持部分验证，如果不支持则回退到全部验证
+            if hasattr(coordinator, 'run_partial_validation'):
+                result = await coordinator.run_partial_validation(test_cases)
+            else:
+                logger.warning("⚠️ TestCoordinator不支持部分验证，将执行全部测试")
+                result = await coordinator.run_full_validation()
+        else:
+            result = await coordinator.run_full_validation()
         return result
 
 
-async def run_direct_validation(api_url: str, config_path: str) -> Dict[str, Any]:
+async def run_direct_validation(api_url: str, config_path: str, test_cases: List[int] = None) -> Dict[str, Any]:
     """
     运行直接验证（直接使用三阶段执行）
     
     Args:
         api_url: API服务地址
         config_path: 配置文件路径
+        test_cases: 指定要执行的测试用例列表，None表示执行全部
         
     Returns:
         dict: 验证结果
     """
     logger = logging.getLogger(__name__)
     logger.info("🚀 Starting direct validation using three-phase execution...")
+    
+    if test_cases:
+        logger.info(f"📋 Will execute {len(test_cases)} specific tests: {format_test_list(test_cases)}")
     
     total_start_time = time.time()
     
@@ -121,7 +150,11 @@ async def run_direct_validation(api_url: str, config_path: str) -> Dict[str, Any
         "start_time": datetime.now().isoformat(),
         "phases": {},
         "summary": {},
-        "reports": {}
+        "reports": {},
+        "test_scope": {
+            "specified_tests": test_cases,
+            "total_tests": len(test_cases) if test_cases else 37
+        }
     }
     
     try:
@@ -143,7 +176,7 @@ async def run_direct_validation(api_url: str, config_path: str) -> Dict[str, Any
         logger.info("🧪 PHASE 2: Core Test Execution")
         logger.info("=" * 60)
         
-        phase2_result = await phase_2_core_tests(phase1_result["data"], api_url)
+        phase2_result = await phase_2_core_tests(phase1_result["data"], api_url, test_cases)
         validation_result["phases"]["phase_2"] = phase2_result
         
         if phase2_result["status"] == "COMPLETED":
@@ -254,6 +287,102 @@ def print_execution_summary(result: Dict[str, Any]) -> None:
     print("=" * 80)
 
 
+def parse_test_cases(test_string: str) -> List[int]:
+    """
+    解析测试用例字符串，支持多种格式
+    
+    Args:
+        test_string: 测试用例字符串，如 "1,2,5" 或 "1-10" 或 "1,3-5,8"
+        
+    Returns:
+        list: 测试用例编号列表
+        
+    Examples:
+        parse_test_cases("1") -> [1]
+        parse_test_cases("1,2,5") -> [1, 2, 5]
+        parse_test_cases("1-5") -> [1, 2, 3, 4, 5]
+        parse_test_cases("1,3-5,8") -> [1, 3, 4, 5, 8]
+    """
+    if not test_string:
+        return list(range(1, 38))  # 默认全部37项测试
+    
+    test_cases = set()
+    
+    # 按逗号分割各个部分
+    parts = test_string.split(',')
+    
+    for part in parts:
+        part = part.strip()
+        if '-' in part:
+            # 处理范围，如 "1-5"
+            try:
+                start, end = part.split('-', 1)
+                start_num = int(start.strip())
+                end_num = int(end.strip())
+                
+                if start_num > end_num:
+                    raise ValueError(f"Invalid range: {part} (start > end)")
+                if start_num < 1 or end_num > 37:
+                    raise ValueError(f"Test number out of range: {part} (valid: 1-37)")
+                
+                test_cases.update(range(start_num, end_num + 1))
+            except ValueError as e:
+                if "invalid literal" in str(e):
+                    raise ValueError(f"Invalid range format: {part}")
+                raise
+        else:
+            # 处理单个数字
+            try:
+                test_num = int(part)
+                if test_num < 1 or test_num > 37:
+                    raise ValueError(f"Test number out of range: {test_num} (valid: 1-37)")
+                test_cases.add(test_num)
+            except ValueError:
+                raise ValueError(f"Invalid test number: {part}")
+    
+    return sorted(list(test_cases))
+
+
+def format_test_list(test_cases: List[int]) -> str:
+    """
+    格式化测试用例列表为易读的字符串
+    
+    Args:
+        test_cases: 测试用例编号列表
+        
+    Returns:
+        str: 格式化的字符串
+    """
+    if not test_cases:
+        return "无"
+    
+    if len(test_cases) == 37:
+        return "全部37项测试"
+    
+    # 将连续的数字组合成范围
+    ranges = []
+    start = test_cases[0]
+    end = start
+    
+    for i in range(1, len(test_cases)):
+        if test_cases[i] == end + 1:
+            end = test_cases[i]
+        else:
+            if start == end:
+                ranges.append(str(start))
+            else:
+                ranges.append(f"{start}-{end}")
+            start = end = test_cases[i]
+    
+    # 添加最后一个范围
+    if start == end:
+        ranges.append(str(start))
+    else:
+        ranges.append(f"{start}-{end}")
+    
+    return ", ".join(ranges)
+
+
 def parse_arguments():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
@@ -261,10 +390,17 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例用法:
-  python main.py                                    # 使用默认配置
+  python main.py                                    # 使用默认配置，执行全部测试
   python main.py --api-url http://localhost:8080    # 指定API地址
   python main.py --config custom_config.yml         # 指定配置文件
   python main.py --mode direct --verbose            # 使用直接模式，详细日志
+  
+测试用例选择:
+  python main.py --tests 1                          # 只执行测试1
+  python main.py --tests 1,2,5                      # 执行测试1、2、5
+  python main.py --tests 1-10                       # 执行测试1到10
+  python main.py --tests 1,3-5,8,10-12             # 混合格式：1、3到5、8、10到12
+  python main.py --dry-run --tests 1-5              # 模拟运行测试1到5
         """
     )
     
@@ -305,6 +441,17 @@ def parse_arguments():
         help="模拟运行，不执行实际测试"
     )
     
+    parser.add_argument(
+        "--tests", "-t",
+        type=str,
+        help="指定要执行的测试用例，支持多种格式:\n"
+             "  单个测试: --tests 1\n"
+             "  多个测试: --tests 1,2,5\n"
+             "  范围测试: --tests 1-10\n"
+             "  混合格式: --tests 1,3-5,8,10-12\n"
+             "  如不指定，则执行全部37项测试"
+    )
+    
     return parser.parse_args()
 
 
@@ -331,6 +478,22 @@ async def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
     
+    # 解析测试用例
+    test_cases = None
+    if hasattr(args, 'tests') and args.tests:
+        try:
+            test_cases = parse_test_cases(args.tests)
+            logger.info(f"📋 将执行指定的{len(test_cases)}项测试: {format_test_list(test_cases)}")
+        except ValueError as e:
+            logger.error(f"❌ 测试用例格式错误: {e}")
+            print(f"\n❌ 错误: {e}")
+            print("\n✅ 正确格式示例:")
+            print("   --tests 1          # 单个测试")
+            print("   --tests 1,2,5      # 多个测试") 
+            print("   --tests 1-10       # 范围测试")
+            print("   --tests 1,3-5,8    # 混合格式")
+            sys.exit(1)
+    
     # 验证配置文件存在
     if not Path(args.config).exists():
         logger.error(f"❌ 配置文件不存在: {args.config}")
@@ -342,7 +505,12 @@ async def main():
         print("✅ 配置验证通过，所有必需文件都存在")
         print("📋 将执行以下操作:")
         print("   1. 系统预检查和组件初始化")
-        print("   2. 执行37项KONE验证测试")
+        
+        if test_cases:
+            print(f"   2. 执行指定的{len(test_cases)}项KONE验证测试: {format_test_list(test_cases)}")
+        else:
+            print("   2. 执行全部37项KONE验证测试")
+            
         print("   3. 生成多格式测试报告")
         print(f"   4. 保存报告到: {output_dir}")
         return
@@ -352,9 +520,9 @@ async def main():
     try:
         # 根据模式选择执行方式
         if args.mode == "coordinated":
-            result = await run_coordinated_validation(args.api_url, args.config)
+            result = await run_coordinated_validation(args.api_url, args.config, test_cases)
         else:
-            result = await run_direct_validation(args.api_url, args.config)
+            result = await run_direct_validation(args.api_url, args.config, test_cases)
         
         # 打印执行摘要
         print_execution_summary(result)
