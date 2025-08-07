@@ -245,7 +245,7 @@ async def phase_2_core_tests(setup_data: Dict[str, Any],
                     continue
                 
                 # 执行单个测试
-                result = await _execute_single_test(client, test_config, building_manager, api_base_url)
+                result = await _execute_single_test(client, test_config, building_manager, api_base_url, test_id)
                 test_result["test_results"].append(result)
                 
                 # 记录进度
@@ -348,7 +348,7 @@ async def phase_2_partial_tests(setup_data: Dict[str, Any],
                     continue
                 
                 # 执行单个测试
-                result = await _execute_single_test(client, test_config, building_manager, api_base_url)
+                result = await _execute_single_test(client, test_config, building_manager, api_base_url, test_id)
                 test_result["test_results"].append(result)
                 
                 # 记录进度
@@ -476,7 +476,8 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
 async def _execute_single_test(client: httpx.AsyncClient, 
                              test_config: TestCaseConfig,
                              building_manager: BuildingDataManager,
-                             api_base_url: str) -> Dict[str, Any]:
+                             api_base_url: str,
+                             test_id: str = None) -> Dict[str, Any]:
     """
     执行单个测试用例
     
@@ -485,6 +486,7 @@ async def _execute_single_test(client: httpx.AsyncClient,
         test_config: 测试配置
         building_manager: 建筑数据管理器
         api_base_url: API基础URL
+        test_id: 测试ID（如 Test_1, Test_2等）
         
     Returns:
         dict: 测试结果
@@ -492,7 +494,7 @@ async def _execute_single_test(client: httpx.AsyncClient,
     start_time = time.time()
     
     result = {
-        "test_id": test_config.name,
+        "test_id": test_id or test_config.name,  # 优先使用传入的test_id
         "name": test_config.name,
         "category": test_config.category.value,
         "status": "UNKNOWN",

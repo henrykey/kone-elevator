@@ -233,6 +233,47 @@ class TestCaseMapper:
             validation_method="check_realtime_status"
         )
         
+        test_cases["Test_13"] = TestCaseConfig(
+            name="Elevator position tracking",
+            description="电梯位置跟踪测试",
+            category=TestCategory.STATUS_MONITORING,
+            http_method=HttpMethod.GET,
+            endpoint="/api/elevator/status",
+            parameters={
+                "building_id": self.building_id,
+                "group_id": "1"
+            },
+            expected_status=200,
+            validation_method="check_position_tracking"
+        )
+        
+        test_cases["Test_14"] = TestCaseConfig(
+            name="System health check",
+            description="系统健康状态检查",
+            category=TestCategory.STATUS_MONITORING,
+            http_method=HttpMethod.GET,
+            endpoint="/api/elevator/status",
+            parameters={
+                "building_id": self.building_id
+            },
+            expected_status=200,
+            validation_method="check_system_health"
+        )
+        
+        test_cases["Test_15"] = TestCaseConfig(
+            name="Multiple elevators status",
+            description="多电梯状态监控测试",
+            category=TestCategory.STATUS_MONITORING,
+            http_method=HttpMethod.GET,
+            endpoint="/api/elevator/status",
+            parameters={
+                "building_id": self.building_id,
+                "all_groups": True
+            },
+            expected_status=200,
+            validation_method="check_multiple_elevators_status"
+        )
+        
         # ===== 错误处理测试 (Tests 16-25) =====
         test_cases["Test_16"] = TestCaseConfig(
             name="Invalid floor call",
