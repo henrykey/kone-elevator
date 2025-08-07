@@ -123,14 +123,15 @@ async def test_report_generation():
     
     # 3. 生成报告
     print("\n📄 Step 3: 生成多格式报告...")
+    output_dir = Path("./reports")
+    output_dir.mkdir(exist_ok=True)
+    
     generator = ReportGenerator("IBC-AI CO.")
     
-    reports = generator.generate_report(test_results, metadata)
+    reports = generator.generate_report(test_results, metadata, str(output_dir))
     
     # 4. 保存报告
     print("\n💾 Step 4: 保存报告文件...")
-    output_dir = Path("./demo_reports")
-    output_dir.mkdir(exist_ok=True)
     
     report_files = {}
     
@@ -140,12 +141,17 @@ async def test_report_generation():
             continue
             
         if format_type == "excel":
-            # Excel可能返回特殊消息
+            # Excel文件已经保存，content是文件路径
             if "not available" in content:
                 print(f"   ⚠️ Excel: {content}")
                 continue
+            else:
+                report_files[format_type] = content
+                filepath = Path(content)
+                print(f"   ✅ {format_type.upper()}: {filepath} ({filepath.stat().st_size} 字节)")
+                continue
                 
-        # 保存文件
+        # 保存其他格式文件
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"kone_validation_report_{timestamp}.{format_type}"
         filepath = output_dir / filename

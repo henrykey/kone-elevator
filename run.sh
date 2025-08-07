@@ -27,7 +27,7 @@ if check_api_status; then
 else
     echo "⚠️ FastAPI服务未启动"
     echo "请先启动FastAPI服务："
-    echo "   python app.py"
+    echo "   python acesslifts.py"
     echo ""
     read -p "是否继续？(y/N): " continue_choice
     if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then

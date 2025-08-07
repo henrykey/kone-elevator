@@ -434,7 +434,7 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
         
         # 生成多格式报告
         logger.info("📊 Generating multi-format reports...")
-        reports = report_generator.generate_report(formatted_results, complete_metadata)
+        reports = report_generator.generate_report(formatted_results, complete_metadata, "reports")
         
         if "error" in reports:
             raise Exception(f"Report generation failed: {reports['error']}")

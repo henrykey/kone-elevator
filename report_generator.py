@@ -58,13 +58,14 @@ class ReportGenerator:
         self.report_timestamp = datetime.now()
         logger.info(f"ReportGenerator initialized for {company_name}")
     
-    def generate_report(self, test_results: List[TestResult], metadata: Dict[str, Any]) -> Dict[str, str]:
+    def generate_report(self, test_results: List[TestResult], metadata: Dict[str, Any], output_dir: str = ".") -> Dict[str, str]:
         """
         生成多格式测试报告
         
         Args:
             test_results: 测试结果列表
             metadata: 测试元数据
+            output_dir: 输出目录路径
             
         Returns:
             dict: 包含不同格式报告的字典
@@ -87,7 +88,7 @@ class ReportGenerator:
                 "markdown": self._generate_markdown_report(report_data),
                 "json": self._generate_json_report(report_data),
                 "html": self._generate_html_report(report_data),
-                "excel": self._generate_excel_report(report_data)
+                "excel": self._generate_excel_report(report_data, output_dir)
             }
             
             logger.info(f"Generated reports in {len(reports)} formats")
@@ -738,12 +739,13 @@ class ReportGenerator:
         template = Template(template_str)
         return template.render(**report_data)
     
-    def _generate_excel_report(self, report_data: Dict[str, Any]) -> str:
+    def _generate_excel_report(self, report_data: Dict[str, Any], output_dir: str = ".") -> str:
         """
         生成Excel格式报告
         
         Args:
             report_data: 报告数据
+            output_dir: 输出目录路径
             
         Returns:
             str: Excel文件路径或错误信息
@@ -849,23 +851,31 @@ class ReportGenerator:
             for ws in [ws_summary, ws_details]:
                 for column in ws.columns:
                     max_length = 0
-                    column_letter = column[0].column_letter
+                    column_letter = None
                     for cell in column:
                         try:
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(str(cell.value))
+                            # 跳过合并的单元格
+                            if hasattr(cell, 'column_letter'):
+                                if column_letter is None:
+                                    column_letter = cell.column_letter
+                                if cell.value and len(str(cell.value)) > max_length:
+                                    max_length = len(str(cell.value))
                         except:
                             pass
-                    adjusted_width = min(max_length + 2, 50)
-                    ws.column_dimensions[column_letter].width = adjusted_width
+                    
+                    if column_letter:
+                        adjusted_width = min(max_length + 2, 50) if max_length > 0 else 15
+                        ws.column_dimensions[column_letter].width = adjusted_width
             
             # 保存文件
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"KONE_Test_Report_{timestamp}.xlsx"
-            filepath = Path(filename)
+            output_path = Path(output_dir)
+            output_path.mkdir(exist_ok=True)
+            filepath = output_path / filename
             wb.save(filepath)
             
-            logger.info(f"Excel report saved as {filename}")
+            logger.info(f"Excel report saved as {filepath}")
             return str(filepath)
             
         except Exception as e:
@@ -887,6 +897,10 @@ class ReportGenerator:
         saved_files = {}
         
         try:
+            # 确保reports目录存在
+            reports_dir = Path("reports")
+            reports_dir.mkdir(exist_ok=True)
+            
             # 保存各种格式的报告
             file_extensions = {
                 "markdown": ".md",
@@ -897,13 +911,13 @@ class ReportGenerator:
             for format_name, content in reports.items():
                 if format_name in file_extensions:
                     filename = f"{base_filename}_{timestamp}{file_extensions[format_name]}"
-                    filepath = Path(filename)
+                    filepath = reports_dir / filename
                     
                     with open(filepath, 'w', encoding='utf-8') as f:
                         f.write(content)
                     
                     saved_files[format_name] = str(filepath)
-                    logger.info(f"Saved {format_name} report as {filename}")
+                    logger.info(f"Saved {format_name} report as {filepath}")
                 elif format_name == "excel":
                     # Excel文件已经在生成时保存
                     saved_files[format_name] = content

@@ -14,6 +14,10 @@ import aiohttp
 import random
 import uuid
 from datetime import datetime
+from pathlib import Path
+from report_generator import ReportGenerator, TestResult
+import threading
+import time
 
 def load_config():
     """Load configuration file"""
@@ -57,6 +61,8 @@ async def test_elevator_scenario(websocket, scenario_name, test_id, call_data, t
     print(f"\n🧪 {scenario_name} ({test_id})")
     print("-" * 40)
     
+    import time
+    start_time = time.time()
     request_id = get_request_id()
     
     if test_type == "ping":
@@ -148,15 +154,83 @@ async def test_elevator_scenario(websocket, scenario_name, test_id, call_data, t
     else:
         success = any(r.get('statusCode') == 201 for r in responses)
         
-    if success:
-        print(f'[✅] {scenario_name} - Test passed!')
-    else:
-        print(f'[❌] {scenario_name} - Test failed')
+    end_time = time.time()
+    duration_ms = (end_time - start_time) * 1000
         
-    return success
+    if success:
+        print(f'[✅] {scenario_name} - Test passed! (Duration: {duration_ms:.1f}ms)')
+    else:
+        print(f'[❌] {scenario_name} - Test failed (Duration: {duration_ms:.1f}ms)')
+        
+    return success, duration_ms
+
+def sort_buildings_by_preference(buildings):
+    """
+    Sort buildings by priority:
+    1. v2 buildings first
+    2. Buildings supporting v2
+    3. v1 buildings
+    """
+    v2_buildings = [b for b in buildings if b.get('version') == 'v2']
+    supports_v2_buildings = [b for b in buildings if b.get('version') != 'v2' and b.get('supports_v2', False)]
+    v1_buildings = [b for b in buildings if b.get('version') != 'v2' and not b.get('supports_v2', False)]
+    
+    return v2_buildings + supports_v2_buildings + v1_buildings
+
+def get_user_building_choice(buildings, timeout=5):
+    """
+    Let user choose building with timeout functionality
+    """
+    user_choice = [None]  # Use list to modify value in inner function
+    
+    def get_input():
+        try:
+            choice = input()
+            if choice.strip():
+                user_choice[0] = choice.strip()
+        except:
+            pass
+    
+    # Display building options
+    print(f"\n🏗️ Detected {len(buildings)} buildings, please select building to test:")
+    for i, building in enumerate(buildings, 1):
+        version_label = "v2" if building.get('version') == 'v2' else ("supports v2" if building.get('supports_v2', False) else "v1")
+        print(f"   {i}. {building['id']} ({building.get('name', 'N/A')}) [{version_label}]")
+    
+    print(f"\nPlease enter building number (1-{len(buildings)}), auto-select optimal building after {timeout}s: ", end='', flush=True)
+    
+    # Start input thread
+    input_thread = threading.Thread(target=get_input)
+    input_thread.daemon = True
+    input_thread.start()
+    
+    # Wait for user input or timeout
+    input_thread.join(timeout)
+    
+    if user_choice[0] is not None:
+        try:
+            choice_idx = int(user_choice[0]) - 1
+            if 0 <= choice_idx < len(buildings):
+                selected_building = buildings[choice_idx]
+                print(f"\n✅ User selected: {selected_building['id']} ({selected_building.get('name', 'N/A')})")
+                return selected_building
+            else:
+                print(f"\n⚠️ Invalid selection, auto-selecting optimal building")
+        except ValueError:
+            print(f"\n⚠️ Invalid input format, auto-selecting optimal building")
+    else:
+        print(f"\n⏱️ Timeout, auto-selecting optimal building")
+    
+    # Auto-select: choose first after priority sorting
+    sorted_buildings = sort_buildings_by_preference(buildings)
+    selected_building = sorted_buildings[0]
+    version_label = "v2" if selected_building.get('version') == 'v2' else ("supports v2" if selected_building.get('supports_v2', False) else "v1")
+    print(f"🎯 Auto-selected: {selected_building['id']} ({selected_building.get('name', 'N/A')}) [{version_label}]")
+    
+    return selected_building
 
 async def get_available_buildings_list(config):
-    """Get list of available buildings from KONE API"""
+    """Get list of available buildings from KONE API with detailed information"""
     try:
         token = get_access_token(config['client_id'], config['client_secret'], 
                                 config.get('token_endpoint', 'https://dev.kone.com/api/v2/oauth2/token'))
@@ -172,24 +246,42 @@ async def get_available_buildings_list(config):
                 if response.status == 200:
                     data = await response.json()
                     buildings = data.get('buildings', [])
-                    print(f"🏢 发现 {len(buildings)} 栋可用建筑")
+                    print(f"🏢 Found {len(buildings)} available buildings")
                     
-                    building_list = []
+                    building_info_list = []
                     if buildings:
                         for building in buildings:
-                            building_list.append(building['id'])
-                            print(f"   - {building['id']} ({building.get('name', 'N/A')})")
-                        return building_list, token
+                            building_info = {
+                                'id': building['id'],
+                                'name': building.get('name', 'N/A'),
+                                'version': 'v2' if 'V2' in building.get('desc', '') else 'v1',  # Determine version by desc
+                                'supports_v2': 'V2' in building.get('desc', '')  # Whether supports v2
+                            }
+                            building_info_list.append(building_info)
+                            
+                            # Determine version label
+                            version_label = "v2" if building_info['version'] == 'v2' else ("supports v2" if building_info['supports_v2'] else "v1")
+                            print(f"   - {building['id']} ({building_info['name']}) [{version_label}]")
+                        
+                        return building_info_list, token
                     else:
-                        print("⚠️ 未发现可用建筑，返回默认建筑列表")
-                        return ['L1QinntdEOg', 'fWlfHyPlaca'], token
+                        print("⚠️ No available buildings found, returning default building list")
+                        default_buildings = [
+                            {'id': 'L1QinntdEOg', 'name': 'Default1', 'version': 'v1', 'supports_v2': True},
+                            {'id': 'fWlfHyPlaca', 'name': 'Default2', 'version': 'v1', 'supports_v2': True}
+                        ]
+                        return default_buildings, token
                 else:
-                    print(f"❌ 获取建筑列表失败: {response.status}")
-                    return ['L1QinntdEOg', 'fWlfHyPlaca'], token
+                    print(f"❌ Failed to get building list: {response.status}")
+                    default_buildings = [
+                        {'id': 'L1QinntdEOg', 'name': 'Default1', 'version': 'v1', 'supports_v2': True},
+                        {'id': 'fWlfHyPlaca', 'name': 'Default2', 'version': 'v1', 'supports_v2': True}
+                    ]
+                    return default_buildings, token
                     
     except Exception as e:
-        print(f"❌ 获取建筑列表异常: {e}")
-        # 返回默认值
+        print(f"❌ Exception getting building list: {e}")
+        # Return default value
         token = get_access_token(config['client_id'], config['client_secret'], 
                                 config.get('token_endpoint', 'https://dev.kone.com/api/v2/oauth2/token'))
         return ['L1QinntdEOg', 'fWlfHyPlaca'], token
@@ -200,7 +292,7 @@ async def get_building_config_via_ping(websocket, building_id, max_retries=3):
     
     for retry_count in range(max_retries):
         try:
-            # 尝试多种请求类型获取配置
+            # Try multiple request types to get configuration
             test_requests = [
                 {
                     "name": "actions",
@@ -236,92 +328,92 @@ async def get_building_config_via_ping(websocket, building_id, max_retries=3):
                 }
             ]
             
-            print(f"📡 正在获取建筑 {building_id} 的配置... (尝试 {retry_count + 1}/{max_retries})")
+            print(f"📡 Getting building {building_id} configuration... (attempt {retry_count + 1}/{max_retries})")
             
             for request in test_requests:
                 try:
-                    print(f"  🔸 尝试 {request['name']} 请求...")
+                    print(f"  🔸 Trying {request['name']} request...")
                     await websocket.send(json.dumps(request['message']))
                     
-                    # 等待响应
+                    # Wait for response
                     timeout_count = 0
-                    while timeout_count < 2:  # 减少单个请求的等待时间
+                    while timeout_count < 2:  # Reduce waiting time for single request
                         try:
                             message = await asyncio.wait_for(websocket.recv(), timeout=10)
                             data = json.loads(message)
                             
-                            # 检查 actions 响应中的配置数据
+                            # Check configuration data in response
                             if (data.get('callType') == 'actions' and 
                                 data.get('data', {}).get('destinations')):
                                 
                                 config_data = data['data']
-                                print(f"✅ 通过 actions 请求成功获取建筑配置")
-                                print(f"   - 目标区域数量: {len(config_data.get('destinations', []))}")
-                                print(f"   - 电梯组数量: {len(config_data.get('groups', []))}")
+                                print(f"✅ Successfully obtained building configuration via request")
+                                print(f"   - Destination areas count: {len(config_data.get('destinations', []))}")
+                                print(f"   - Elevator groups count: {len(config_data.get('groups', []))}")
                                 return config_data
                             
-                            # 检查 config 响应中的配置数据
+                            # Check configuration data in response
                             elif (data.get('callType') == 'config' and 
                                   data.get('data', {}).get('destinations')):
                                 
                                 config_data = data['data']
-                                print(f"✅ 通过 config 请求成功获取建筑配置")
-                                print(f"   - 目标区域数量: {len(config_data.get('destinations', []))}")
-                                print(f"   - 电梯组数量: {len(config_data.get('groups', []))}")
+                                print(f"✅ Successfully obtained building configuration via request")
+                                print(f"   - Destination areas count: {len(config_data.get('destinations', []))}")
+                                print(f"   - Elevator groups count: {len(config_data.get('groups', []))}")
                                 return config_data
                             
-                            # 检查 ping 响应
+                            # Check response
                             elif data.get('callType') == 'ping':
-                                print(f"  ✓ ping 响应正常，状态码: {data.get('statusCode', 'N/A')}")
+                                print(f"  ✓ ping response normal, status code: {data.get('statusCode', 'N/A')}")
                                 
                         except asyncio.TimeoutError:
                             timeout_count += 1
-                            print(f"    ⚠️ {request['name']} 请求超时 #{timeout_count}")
+                            print(f"    ⚠️ {request['name']} request timeout #{timeout_count}")
                             break
                         except Exception as e:
-                            print(f"    ❌ {request['name']} 请求解析异常: {e}")
+                            print(f"    ❌ {request['name']} request parsing exception: {e}")
                             break
                             
                 except Exception as e:
-                    print(f"    ❌ {request['name']} 请求发送异常: {e}")
+                    print(f"    ❌ {request['name']} request sending exception: {e}")
                     continue
                     
-            print(f"❌ 第 {retry_count + 1} 次尝试未能获取建筑配置")
+            print(f"❌ Attempt .* failed to get building configuration")
             
-            # 如果不是最后一次尝试，等待一小段时间再重试
+            # If not the last attempt, wait a short time before retry
             if retry_count < max_retries - 1:
-                print("🔄 等待 3 秒后重试...")
+                print("🔄 Wait  seconds before retry...")
                 await asyncio.sleep(3)
                 
         except Exception as e:
-            print(f"❌ 第 {retry_count + 1} 次获取建筑配置异常: {e}")
+            print(f"❌ Attempt .* get building configuration exception: {e}")
             if retry_count < max_retries - 1:
-                print("🔄 等待 3 秒后重试...")
+                print("🔄 Wait  seconds before retry...")
                 await asyncio.sleep(3)
     
-    print(f"❌ 经过 {max_retries} 次尝试仍未能获取建筑配置")
+    print(f"❌ Unable to get building configuration after .* attempts")
     return None
 
 def generate_virtual_building_config(building_id, config_data):
     """Generate virtual_building_config.yml based on API data"""
     config_file_path = 'virtual_building_config.yml'
     
-    # 检查文件是否存在
+    # Check if file exists
     config_file_exists = False
     try:
         with open(config_file_path, 'r') as f:
             existing_config = yaml.safe_load(f)
             config_file_exists = True
             if existing_config.get('building', {}).get('id') == building_id:
-                print(f"✅ 配置文件已存在且建筑ID匹配 ({building_id})，跳过重建")
+                print(f"✅ Configuration file exists and Building ID matches ({building_id})，skip rebuild")
                 return
     except FileNotFoundError:
-        print(f"📝 配置文件 {config_file_path} 不存在，将创建新文件")
+        print(f"📝 Configuration file .* does not exist, will create new file")
         config_file_exists = False
     
-    # 如果没有配置数据，创建基础配置文件
+    # If no configuration data, create basic configuration file
     if not config_data:
-        print("⚠️ 无API配置数据，创建基础配置文件")
+        print("⚠️ No API configuration data, create basic configuration file")
         basic_config = {
             'building': {
                 'id': building_id,
@@ -345,24 +437,24 @@ def generate_virtual_building_config(building_id, config_data):
                         {'area_id': i * 1000, 'side': 1, 'short_name': str(i)},
                         {'area_id': i * 1000 + 10, 'side': 2, 'short_name': f'{i}R'}
                     ]
-                } for i in range(1, 41)  # 默认1-40层
+                } for i in range(1, 41)  # Default 1-40 floors
             }
         }
         
         with open(config_file_path, 'w') as f:
             yaml.dump(basic_config, f, default_flow_style=False, indent=2, allow_unicode=True)
         
-        print(f"✅ 已创建基础配置文件 {config_file_path}")
-        print(f"   - 建筑ID: {building_id}")
-        print(f"   - 默认楼层: 1-40")
-        print(f"   - 默认电梯: 4部 (A, B, C, D)")
+        print(f"✅ Created basic configuration file {config_file_path}")
+        print(f"   - Building ID: {building_id}")
+        print(f"   - Default floors: 1-40")
+        print(f"   - Default elevators: 4 elevators (A, B, C, D)")
         return
     
     try:
         destinations = config_data.get('destinations', [])
         groups = config_data.get('groups', [])
         
-        # 构建新的配置结构
+        # Build new configuration structure
         new_config = {
             'building': {
                 'id': building_id,
@@ -374,7 +466,7 @@ def generate_virtual_building_config(building_id, config_data):
             'destinations': []
         }
         
-        # 处理电梯组
+        # Process elevator groups
         if groups:
             for group in groups:
                 group_id = f"group_{group.get('group_id', 1)}"
@@ -387,7 +479,7 @@ def generate_virtual_building_config(building_id, config_data):
                     })
                 new_config['elevator_groups'][group_id] = {'lifts': lifts}
         
-        # 处理楼层目标
+        # Process floor targets
         floors_dict = {}
         for dest in destinations:
             area_id = dest.get('area_id')
@@ -408,32 +500,32 @@ def generate_virtual_building_config(building_id, config_data):
                 'exit': dest.get('exit', False)
             })
         
-        # 转换为配置格式
+        # Convert to configuration format
         for floor_id, floor_data in sorted(floors_dict.items()):
             floor_key = f"f_{floor_id}"
             new_config['floors'][floor_key] = floor_data
         
-        # 保存配置文件
+        # Save configuration file
         with open(config_file_path, 'w') as f:
             yaml.dump(new_config, f, default_flow_style=False, indent=2, allow_unicode=True)
         
-        print(f"✅ 已生成新的 {config_file_path}")
-        print(f"   - 建筑ID: {building_id}")
-        print(f"   - 楼层数: {len(floors_dict)}")
-        print(f"   - 目标区域数: {len(destinations)}")
-        print(f"   - 电梯组数: {len(groups)}")
+        print(f"✅ Generated new {config_file_path}")
+        print(f"   - Building ID: {building_id}")
+        print(f"   - Floor count: {len(floors_dict)}")
+        print(f"   - Target areas count: {len(destinations)}")
+        print(f"   - Elevator groups count: {len(groups)}")
         
     except Exception as e:
-        print(f"❌ 生成配置文件失败: {e}")
-        # 如果生成失败且文件不存在，创建基础配置
+        print(f"❌ Failed to generate configuration file: {e}")
+        # If generation fails and file does not exist, create basic configuration
         if not config_file_exists:
-            print("🔄 创建基础配置文件作为备选...")
+            print("🔄 Create basic configuration file as fallback...")
             generate_virtual_building_config(building_id, None)
 
 async def multi_scenario_test():
     """Execute complete elevator scenario tests - all 37 test cases with dynamic building selection"""
     print("🏢 KONE Complete Elevator Call Test (37 test cases)")
-    print("Enhanced with dynamic building configuration")
+    print("Enhanced with dynamic building configuration and user selection")
     print("=" * 60)
     
     try:
@@ -441,62 +533,105 @@ async def multi_scenario_test():
         config = load_config()
         
         # 1. Get available buildings list
-        print("\n🔍 步骤 1: 获取可用建筑列表...")
-        building_list, token = await get_available_buildings_list(config)
+        print("\n🔍 Step : Get available building list...")
+        building_info_list, token = await get_available_buildings_list(config)
         
-        if not building_list:
-            print("⚠️ 未获取到建筑列表，使用默认建筑")
-            building_list = ['L1QinntdEOg', 'fWlfHyPlaca']
+        if not building_info_list:
+            print("⚠️ Failed to get building list, using default buildings")
+            building_info_list = [
+                {'id': 'L1QinntdEOg', 'name': 'Default1', 'version': 'v1', 'supports_v2': True},
+                {'id': 'fWlfHyPlaca', 'name': 'Default2', 'version': 'v1', 'supports_v2': True}
+            ]
         
-        selected_building_id = None
+        # 2. Let user choose building or auto-select after timeout
+        if len(building_info_list) > 1:
+            selected_building = get_user_building_choice(building_info_list, timeout=5)
+        else:
+            selected_building = building_info_list[0]
+            print(f"\n🎯 Only one building, auto-select：{selected_building['id']} ({selected_building.get('name', 'N/A')})")
+        
+        selected_building_id = selected_building['id']
         config_data = None
         websocket = None
         
-        # 2. Try each building until successful config retrieval
+        # 3. Connect to selected building and get configuration
         ws_endpoint = config.get('ws_endpoint', 'wss://dev.kone.com/stream-v2')
         uri = f"{ws_endpoint}?accessToken={token}"
         
-        for i, building_id in enumerate(building_list):
-            print(f"\n🔌 步骤 2.{i+1}: 尝试建筑 {building_id} ({i+1}/{len(building_list)})...")
+        print(f"\n🔌 Step : Connect to selected building {selected_building_id}...")
+        
+        try:
+            # Establish WebSocket connection for selected building
+            websocket = await websockets.connect(uri, subprotocols=['koneapi'])
+            print('[✅] WebSocket connection established')
             
-            try:
-                # Establish WebSocket connection for this building
-                websocket = await websockets.connect(uri, subprotocols=['koneapi'])
-                print('[✅] WebSocket connection established')
+            # Try to get building configuration via ping
+            print(f"🏗️ Step 3: Get building configuration...")
+            config_data = await get_building_config_via_ping(websocket, selected_building_id, max_retries=3)
+            
+            if config_data:
+                print(f"✅ Successfully obtained building configuration!")
+            else:
+                print(f"❌ Building .* configuration failed, trying other buildings...")
+                await websocket.close()
+                websocket = None
                 
-                # 3. Try to get building configuration via ping
-                print(f"🏗️ 步骤 3.{i+1}: 获取建筑 {building_id} 的配置...")
-                config_data = await get_building_config_via_ping(websocket, building_id, max_retries=1)
-                
-                if config_data:
-                    print(f"✅ 成功获取建筑 {building_id} 的配置!")
-                    selected_building_id = building_id
-                    break
-                else:
-                    print(f"❌ 建筑 {building_id} 配置获取失败，尝试下一栋...")
-                    await websocket.close()
-                    websocket = None
+                # Fallback: try other buildings in priority order
+                sorted_buildings = sort_buildings_by_preference(building_info_list)
+                for fallback_building in sorted_buildings:
+                    if fallback_building['id'] == selected_building_id:
+                        continue  # Skip already tried building
                     
-            except Exception as e:
-                print(f"❌ 连接建筑 {building_id} 失败: {e}")
-                if websocket:
-                    await websocket.close()
-                    websocket = None
+                    print(f"\n🔄 Trying fallback building {fallback_building['id']}...")
+                    try:
+                        websocket = await websockets.connect(uri, subprotocols=['koneapi'])
+                        config_data = await get_building_config_via_ping(websocket, fallback_building['id'], max_retries=1)
+                        
+                        if config_data:
+                            selected_building_id = fallback_building['id']
+                            selected_building = fallback_building
+                            print(f"✅ Successfully connected to fallback building {selected_building_id}!")
+                            break
+                        else:
+                            await websocket.close()
+                            websocket = None
+                    except Exception as e:
+                        print(f"❌ Failed to connect to fallback building : {e}")
+                        if websocket:
+                            await websocket.close()
+                            websocket = None
+                            
+        except Exception as e:
+            print(f"❌ Failed to connect to building : {e}")
+            if websocket:
+                await websocket.close()
+                websocket = None
         
         # Check if we found a working building
-        if not selected_building_id:
-            print("❌ 所有建筑配置获取都失败，使用第一个建筑作为默认选择")
-            selected_building_id = building_list[0]
+        if not selected_building_id or not config_data:
+            print("❌ All building configuration attempts failed, using first building as default")
+            selected_building_id = building_info_list[0]['id']
+            selected_building = building_info_list[0]
             # Re-establish connection for the default building
             websocket = await websockets.connect(uri, subprotocols=['koneapi'])
             print('[✅] WebSocket connection established for default building')
+            print("🔄 Create basic configuration file as fallback...")
+            generate_virtual_building_config(selected_building_id, None)
         
         # 4. Generate/update virtual_building_config.yml
-        print(f"\n📝 步骤 4: 更新配置文件...")
-        generate_virtual_building_config(selected_building_id, config_data)
+        print(f"\n📝 Step 4: Update configuration file...")
+        if config_data:
+            generate_virtual_building_config(selected_building_id, config_data)
+        else:
+            print("⚠️ No configuration data, will try to re-obtain during testing")
         
         # 5. Execute all test scenarios with the selected building
-        print(f"\n📊 步骤 5: 执行 37 项测试 (建筑: {selected_building_id})...")
+        print(f"\n📊 Step : Execute  tests (building: {selected_building_id})...")
+        version_label = "v2" if selected_building.get('version') == 'v2' else ("supports v2" if selected_building.get('supports_v2', False) else "v1")
+        print(f"🏗️ Selected building info: {selected_building.get('name', 'N/A')} [{version_label}]")
+        
+        # 5. Execute all test scenarios with the selected building
+        print(f"\n📊 Step : Execute  tests (building: {selected_building_id})...")
         
         # Update building ID in test scenarios
         formatted_building_id = selected_building_id if selected_building_id.startswith("building:") else f"building:{selected_building_id}"
@@ -596,7 +731,7 @@ async def multi_scenario_test():
         for i, scenario in enumerate(test_scenarios, 1):
             try:
                 print(f"\n📊 Progress: {i}/{len(test_scenarios)}")
-                success = await test_elevator_scenario(
+                success, duration_ms = await test_elevator_scenario(
                     websocket, 
                     scenario["name"], 
                     scenario["test_id"], 
@@ -608,6 +743,7 @@ async def multi_scenario_test():
                     "scenario": scenario["name"],
                     "test_id": scenario["test_id"],
                     "success": success,
+                    "duration_ms": duration_ms,
                     "category": scenario.get("category", "unknown")
                 })
                 
@@ -620,6 +756,7 @@ async def multi_scenario_test():
                     "scenario": scenario["name"],
                     "test_id": scenario["test_id"],
                     "success": False,
+                    "duration_ms": 0,  # Set to 0 for failed tests
                     "error": str(e),
                     "category": scenario.get("category", "unknown")
                 })
@@ -657,7 +794,7 @@ async def multi_scenario_test():
                 rate = stats["passed"] / stats["total"] * 100 if stats["total"] > 0 else 0
                 print(f"  {category}: {stats['passed']}/{stats['total']} ({rate:.1f}%)")
         
-        return success_count == len(results)
+        return success_count == len(results), results
         
     except Exception as e:
         print(f'[💥] Overall test exception: {e}')
@@ -672,7 +809,83 @@ async def main():
     """Main function"""
     print(f"🕒 Test Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    success = await multi_scenario_test()
+    success, test_results = await multi_scenario_test()
+    
+    # Generate comprehensive test reports
+    try:
+        print("\n📊 Generate multi-format test reports...")
+        
+        # Convert test results to TestResult objects
+        report_test_results = []
+        for result in test_results:
+            status = "PASS" if result["success"] else "FAIL"
+            test_result = TestResult(
+                test_id=result["test_id"],
+                name=result["scenario"],
+                status=status,
+                duration_ms=result.get("duration_ms", 0),
+                error_message=result.get("error", None),
+                response_data=result.get("response_data", None),
+                category=result.get("category", "elevator_call")
+            )
+            report_test_results.append(test_result)
+        
+        # Prepare metadata
+        metadata = {
+            "test_framework": "KONE SR-API v2.0",
+            "api_version": "2.0.0",
+            "test_date": datetime.now().isoformat(),
+            "total_tests": len(test_results),
+            "building_id": "Dynamic",
+            "test_environment": "WebSocket",
+            "tester": "testall.py",
+            "version": "2.0.0"
+        }
+        
+        # Generate report
+        reports_dir = Path("./reports")
+        reports_dir.mkdir(exist_ok=True)
+        
+        generator = ReportGenerator("IBC-AI CO.")
+        reports = generator.generate_report(report_test_results, metadata, str(reports_dir))
+        
+        # Save additional formats to files
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Save Markdown report
+        if "markdown" in reports:
+            md_filename = f"testall_report_{timestamp}.md"
+            md_filepath = reports_dir / md_filename
+            with open(md_filepath, 'w', encoding='utf-8') as f:
+                f.write(reports["markdown"])
+            print(f"✅ Markdown report generated：{md_filepath}")
+        
+        # Save JSON report
+        if "json" in reports:
+            json_filename = f"testall_report_{timestamp}.json"
+            json_filepath = reports_dir / json_filename
+            with open(json_filepath, 'w', encoding='utf-8') as f:
+                f.write(reports["json"])
+            print(f"✅ JSON report generated：{json_filepath}")
+        
+        # Save HTML report
+        if "html" in reports:
+            html_filename = f"testall_report_{timestamp}.html"
+            html_filepath = reports_dir / html_filename
+            with open(html_filepath, 'w', encoding='utf-8') as f:
+                f.write(reports["html"])
+            print(f"✅ HTML report generated：{html_filepath}")
+        
+        # Excel report (already saved by generator)
+        if "excel" in reports:
+            print(f"✅ Excel report generated：{reports['excel']}")
+        
+        print(f"\n📁 All reports saved to：{reports_dir.absolute()}")
+        
+    except Exception as e:
+        print(f"⚠️ Report generation failed：{e}")
+        import traceback
+        print(f"🔍 Detailed error：{traceback.format_exc()}")
     
     print("\n" + "="*80)
     if success:
