@@ -24,6 +24,7 @@
 - ✅ **取消呼叫**: 支持取消已发起的电梯呼叫
 - ✅ **通用API**: `common-api`支持ping、config、actions
 - ✅ **状态监控**: `site-monitoring`订阅电梯状态更新
+- ✅ **资源发现**: `get_resources()`方法获取可用building IDs
 - ✅ **错误处理**: 完整的错误处理和状态码映射
 
 ### 4. REST API服务

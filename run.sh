@@ -12,6 +12,30 @@ if ! command -v python &> /dev/null; then
     exit 1
 fi
 
+# 检查FastAPI服务状态
+check_api_status() {
+    if curl -s http://localhost:8000/ > /dev/null 2>&1; then
+        return 0  # 服务正在运行
+    else
+        return 1  # 服务未运行
+    fi
+}
+
+echo "🔍 检查FastAPI服务状态..."
+if check_api_status; then
+    echo "✅ FastAPI服务已启动 (http://localhost:8000)"
+else
+    echo "⚠️ FastAPI服务未启动"
+    echo "请先启动FastAPI服务："
+    echo "   python app.py"
+    echo ""
+    read -p "是否继续？(y/N): " continue_choice
+    if [[ ! "$continue_choice" =~ ^[Yy]$ ]]; then
+        echo "退出程序"
+        exit 1
+    fi
+fi
+
 # 检查必要文件
 if [ ! -f "main.py" ]; then
     echo "❌ main.py 文件不存在"
@@ -28,30 +52,25 @@ echo "✅ 环境检查通过"
 # 提供操作选项
 echo ""
 echo "请选择操作："
-echo "1. 启动FastAPI服务"
-echo "2. 运行完整测试（默认模式）"
-echo "3. 运行完整测试（详细日志）"
-echo "4. 运行测试验证"
-echo "5. 模拟运行（不执行实际测试）"
-echo "6. 测试报告生成功能"
-echo "7. 查看帮助"
+echo "1. 运行完整测试（默认模式）"
+echo "2. 运行完整测试（详细日志）"
+echo "3. 运行测试验证"
+echo "4. 模拟运行（不执行实际测试）"
+echo "5. 测试报告生成功能"
+echo "6. 查看帮助"
 
-read -p "请输入选项 (1-7): " choice
+read -p "请输入选项 (1-6): " choice
 
 case $choice in
     1)
-        echo "🌐 启动FastAPI服务..."
-        python app.py
-        ;;
-    2)
         echo "🧪 运行完整测试（默认模式）..."
         python main.py
         ;;
-    3)
+    2)
         echo "🧪 运行完整测试（详细日志）..."
         python main.py --verbose
         ;;
-    4)
+    3)
         echo "🔍 运行测试验证..."
         echo "验证测试协调器..."
         python test_coordinator_verify.py
@@ -64,16 +83,16 @@ case $choice in
         echo "验证执行阶段..."
         python test_phases_verify.py
         ;;
-    5)
+    4)
         echo "🔍 模拟运行..."
         python main.py --dry-run
         ;;
-    6)
-        echo "� 测试报告生成功能..."
+    5)
+        echo "📊 测试报告生成功能..."
         python test_report_generation.py
         ;;
-    7)
-        echo "�📖 查看帮助..."
+    6)
+        echo "📖 查看帮助..."
         python main.py --help
         ;;
     *)

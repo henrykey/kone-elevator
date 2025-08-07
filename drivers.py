@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import requests
+import aiohttp
 import websockets
 import asyncio
 import json
@@ -117,10 +118,13 @@ class KoneDriver(ElevatorDriver):
         self.client_secret = client_secret
         self.token_endpoint = token_endpoint
         self.ws_endpoint = ws_endpoint
+        # 从 token_endpoint 推导 base_url
+        self.base_url = token_endpoint.replace('/oauth2/token', '') if '/oauth2/token' in token_endpoint else "https://dev.kone.com/api/v2"
         self.access_token = None
         self.token_expiry = None
         self.session_id = None
         self.websocket = None
+        self.session = requests.Session()  # HTTP session for REST API calls
         self.connection_lock = asyncio.Lock()
         self.message_queue = asyncio.Queue()
         self.pending_requests = {}
@@ -443,6 +447,9 @@ class KoneDriver(ElevatorDriver):
             destination_area = request.destination or (request.to_floor * 1000)
             
             # 构建呼叫消息
+            # 确保buildingId符合v2规范格式: building:${buildingId}
+            formatted_building_id = request.building_id if request.building_id.startswith("building:") else f"building:{request.building_id}"
+            
             call_payload = LiftCallPayload(
                 request_id=str(uuid.uuid4()),
                 area=source_area,
@@ -451,7 +458,6 @@ class KoneDriver(ElevatorDriver):
                 call=CallRequest(
                     action=request.action_id,
                     destination=destination_area,
-                    language=request.language,
                     delay=request.delay,
                     call_replacement_priority=request.priority,
                     group_size=request.group_size,
@@ -461,7 +467,7 @@ class KoneDriver(ElevatorDriver):
             
             lift_call_msg = LiftCallMessage(
                 type="lift-call-api-v2",
-                buildingId=request.building_id,
+                buildingId=formatted_building_id,
                 callType=request.call_type,
                 groupId=request.group_id,
                 payload=call_payload
@@ -548,9 +554,12 @@ class KoneDriver(ElevatorDriver):
                     return init_result
             
             # 使用site-monitoring订阅电梯状态
+            # 确保buildingId符合v2规范格式: building:${buildingId}
+            formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
+            
             monitor_msg = {
                 "type": "site-monitoring",
-                "buildingId": building_id,
+                "buildingId": formatted_building_id,
                 "callType": "monitor",
                 "groupId": group_id,
                 "payload": {
@@ -616,9 +625,12 @@ class KoneDriver(ElevatorDriver):
                 if not init_result['success']:
                     return init_result
             
+            # 确保buildingId符合v2规范格式: building:${buildingId}
+            formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
+            
             config_msg = {
                 "type": "common-api",
-                "buildingId": building_id,
+                "buildingId": formatted_building_id,
                 "callType": "config",
                 "groupId": "1"
             }
@@ -660,9 +672,12 @@ class KoneDriver(ElevatorDriver):
                 if not init_result['success']:
                     return init_result
             
+            # 确保buildingId符合v2规范格式: building:${buildingId}
+            formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
+            
             ping_msg = {
                 "type": "common-api",
-                "buildingId": building_id,
+                "buildingId": formatted_building_id,
                 "callType": "ping",
                 "groupId": "1",
                 "payload": {
@@ -711,9 +726,12 @@ class KoneDriver(ElevatorDriver):
                 if not init_result['success']:
                     return init_result
             
+            # 确保buildingId符合v2规范格式: building:${buildingId}
+            formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
+            
             actions_msg = {
                 "type": "common-api",
-                "buildingId": building_id,
+                "buildingId": formatted_building_id,
                 "callType": "actions",
                 "groupId": group_id
             }
@@ -747,14 +765,57 @@ class KoneDriver(ElevatorDriver):
             logger.error(f"Actions error: {result}")
             return result
 
+    async def get_resources(self) -> dict:
+        """获取当前token可访问的所有building id信息"""
+        try:
+            # Ensure we have a valid access token (IBC-AI CO.)
+            token = await self.get_access_token()
+            
+            # Build the correct API endpoint URL (IBC-AI CO.)
+            url = f"{self.base_url}/application/self/resources"
+            
+            # Set up request headers with Bearer token (IBC-AI CO.)
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json'
+            }
+            
+            # Create aiohttp session and send GET request (IBC-AI CO.)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    # Check if request was successful (IBC-AI CO.)
+                    if response.status == 200:
+                        # Parse and return the JSON response (IBC-AI CO.)
+                        json_data = await response.json()
+                        logger.info(f"Successfully retrieved resources from {url}")
+                        return json_data
+                    else:
+                        # Get error message for logging (IBC-AI CO.)
+                        error_text = await response.text()
+                        error_msg = f"Resource request failed: {response.status}, {error_text}"
+                        logger.error(f"get_resources error: {error_msg}")
+                        # Raise exception with detailed error information (IBC-AI CO.)
+                        raise Exception(error_msg)
+                        
+        except Exception as e:
+            # Log any unexpected errors (IBC-AI CO.)
+            logger.error(f"get_resources unexpected error: {e}")
+            # Re-raise the exception for caller handling (IBC-AI CO.)
+            raise e
+
     async def close(self):
-        """关闭WebSocket连接"""
+        """关闭WebSocket连接和HTTP session"""
         try:
             if self.websocket and not self.websocket.closed:
                 await self.websocket.close()
                 logger.info("WebSocket connection closed")
+            
+            # 关闭HTTP session
+            if hasattr(self, 'session') and self.session:
+                self.session.close()
+                logger.info("HTTP session closed")
         except Exception as e:
-            logger.error(f"Error closing WebSocket: {e}")
+            logger.error(f"Error closing connections: {e}")
 
 
 class ElevatorDriverFactory:
