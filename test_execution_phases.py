@@ -209,13 +209,28 @@ async def phase_2_core_tests(setup_data: Dict[str, Any],
         # 从设置数据中获取必要组件
         test_mapper = setup_data.get("test_mapper")
         building_manager = setup_data.get("building_manager")
+        test_filter = setup_data.get("test_filter")  # 新增：测试过滤器
         
         if not test_mapper or not building_manager:
             raise Exception("Missing required components from phase 1 setup")
         
-        # 获取所有测试用例
-        all_test_ids = test_mapper.get_all_test_ids()
-        logger.info(f"📋 Executing {len(all_test_ids)} tests...")
+        # 获取测试用例（支持过滤）
+        if test_filter:
+            # 如果有过滤器，只执行指定的测试
+            # 将整数测试用例转换为字符串格式
+            string_test_filter = []
+            for test_case in test_filter:
+                if isinstance(test_case, int):
+                    string_test_filter.append(f"Test_{test_case}")
+                else:
+                    string_test_filter.append(str(test_case))
+            
+            all_test_ids = [tid for tid in test_mapper.get_all_test_ids() if tid in string_test_filter]
+            logger.info(f"📋 Executing {len(all_test_ids)}/{len(test_filter)} filtered tests...")
+        else:
+            # 否则执行所有测试
+            all_test_ids = test_mapper.get_all_test_ids()
+            logger.info(f"📋 Executing all {len(all_test_ids)} tests...")
         
         # 初始化HTTP客户端
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -241,13 +256,119 @@ async def phase_2_core_tests(setup_data: Dict[str, Any],
         test_result["statistics"] = _calculate_test_statistics(test_result["test_results"])
         test_result["status"] = "COMPLETED"
         
-        logger.info(f"✅ Phase 2 completed: {test_result['statistics']['total_tests']} tests executed")
+        execution_mode = "filtered" if test_filter else "full"
+        logger.info(f"✅ Phase 2 completed ({execution_mode}): {test_result['statistics']['total_tests']} tests executed")
         
     except Exception as e:
         test_result["status"] = "ERROR"
         test_result["error"] = str(e)
         test_result["errors"].append(str(e))
         logger.error(f"❌ Phase 2 execution error: {e}")
+    
+    # 添加执行时间
+    test_result["duration_ms"] = (time.time() - start_time) * 1000
+    test_result["end_time"] = datetime.now().isoformat()
+    
+    return test_result
+
+
+async def phase_2_partial_tests(setup_data: Dict[str, Any], 
+                               api_base_url: str = "http://localhost:8000",
+                               test_cases: List[int] = None) -> Dict[str, Any]:
+    """
+    阶段2：部分测试执行
+    只执行指定的测试用例
+    
+    Args:
+        setup_data: 阶段1的设置数据
+        api_base_url: API服务地址
+        test_cases: 要执行的测试用例编号列表
+        
+    Returns:
+        dict: 测试执行结果
+    """
+    logger.info(f"🧪 Phase 2: Partial Test Execution for {len(test_cases) if test_cases else 0} test cases")
+    start_time = time.time()
+    
+    test_result = {
+        "phase": "phase_2_partial_tests",
+        "status": "IN_PROGRESS",
+        "start_time": datetime.now().isoformat(),
+        "test_results": [],
+        "statistics": {},
+        "errors": [],
+        "execution_mode": "partial",
+        "selected_tests": test_cases or []
+    }
+    
+    try:
+        # 从设置数据中获取必要组件
+        test_mapper = setup_data.get("test_mapper")
+        building_manager = setup_data.get("building_manager")
+        
+        if not test_mapper or not building_manager:
+            raise Exception("Missing required components from phase 1 setup")
+        
+        if not test_cases:
+            raise Exception("No test cases specified for partial execution")
+        
+        # 获取所有可用的测试ID
+        all_available_ids = test_mapper.get_all_test_ids()
+        
+        # 将整数测试用例转换为字符串格式
+        string_test_cases = []
+        for test_case in test_cases:
+            if isinstance(test_case, int):
+                string_test_cases.append(f"Test_{test_case}")
+            else:
+                string_test_cases.append(str(test_case))
+        
+        # 过滤出存在的测试用例
+        valid_test_ids = [tid for tid in string_test_cases if tid in all_available_ids]
+        invalid_test_ids = [tid for tid in string_test_cases if tid not in all_available_ids]
+        
+        if invalid_test_ids:
+            logger.warning(f"⚠️ Invalid test IDs will be skipped: {invalid_test_ids}")
+        
+        if not valid_test_ids:
+            raise Exception("No valid test cases found in the specified list")
+        
+        logger.info(f"📋 Executing {len(valid_test_ids)} valid tests out of {len(test_cases)} requested...")
+        
+        # 初始化HTTP客户端
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            
+            # 批量执行指定的测试
+            for i, test_id in enumerate(valid_test_ids, 1):
+                logger.info(f"🔍 Executing test {i}/{len(valid_test_ids)}: {test_id}")
+                
+                test_config = test_mapper.get_test_case(test_id)
+                if not test_config:
+                    logger.warning(f"⚠️ Test config not found for {test_id}")
+                    continue
+                
+                # 执行单个测试
+                result = await _execute_single_test(client, test_config, building_manager, api_base_url)
+                test_result["test_results"].append(result)
+                
+                # 记录进度
+                if i % 3 == 0 or i == len(valid_test_ids):
+                    logger.info(f"📊 Progress: {i}/{len(valid_test_ids)} tests completed")
+        
+        # 计算统计信息
+        test_result["statistics"] = _calculate_test_statistics(test_result["test_results"])
+        test_result["statistics"]["requested_tests"] = len(test_cases)
+        test_result["statistics"]["valid_tests"] = len(valid_test_ids)
+        test_result["statistics"]["invalid_tests"] = len(invalid_test_ids)
+        test_result["status"] = "COMPLETED"
+        
+        logger.info(f"✅ Phase 2 partial execution completed: {test_result['statistics']['total_tests']} tests executed")
+        
+    except Exception as e:
+        test_result["status"] = "ERROR"
+        test_result["error"] = str(e)
+        test_result["errors"].append(str(e))
+        logger.error(f"❌ Phase 2 partial execution error: {e}")
     
     # 添加执行时间
     test_result["duration_ms"] = (time.time() - start_time) * 1000
