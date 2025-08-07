@@ -337,22 +337,30 @@ class KoneDriver(ElevatorDriver):
         """处理接收到的消息"""
         try:
             request_id = data.get('requestId')
+            
+            # 处理标准响应消息（有顶级requestId的消息）
             if request_id and request_id in self.pending_requests:
                 future = self.pending_requests.pop(request_id)
                 if not future.done():
                     future.set_result(data)
+                return
             
-            # Handle ping responses without requestId (IBC-AI CO.)
-            elif (data.get('type') == 'common-api' and 
-                  data.get('callType') == 'ping' and 
-                  not request_id):
-                # Find and resolve any pending ping request (IBC-AI CO.)
-                for pending_id, future in list(self.pending_requests.items()):
+            # 处理ping响应消息（requestId在data.request_id中）
+            elif data.get('callType') == 'ping' and data.get('data', {}).get('request_id'):
+                ping_request_id = data['data']['request_id']
+                print(f"[DEBUG] 后台收到ping响应，request_id: {ping_request_id}")
+                logger.info(f"Received ping response with request_id: {ping_request_id}")
+                
+                if ping_request_id in self.pending_requests:
+                    future = self.pending_requests.pop(ping_request_id)
                     if not future.done():
                         future.set_result(data)
-                        self.pending_requests.pop(pending_id, None)
-                        logger.info(f"Resolved ping response without requestId for {pending_id} (IBC-AI CO.)")
-                        break
+                        print(f"[DEBUG] 成功将ping响应传递给等待中的future")
+                        logger.info(f"Resolved ping response for request_id: {ping_request_id}")
+                    return
+                else:
+                    print(f"[DEBUG] 收到ping响应但找不到对应的pending request: {ping_request_id}")
+                    logger.warning(f"Received ping response but no pending request for: {ping_request_id}")
             
             # 记录所有消息用于调试
             logger.info(f"Received message: {json.dumps(data, indent=2)}")
@@ -679,9 +687,11 @@ class KoneDriver(ElevatorDriver):
             return result
 
     async def ping(self, building_id: str) -> dict:
-        """Ping建筑以检查连接性 - 模仿TypeScript示例的方法 (IBC-AI CO.)"""
+        """Ping建筑以检查连接性 - 使用消息队列避免与后台监听器冲突 (IBC-AI CO.)"""
         try:
+            # 确保已初始化并有WebSocket连接
             if not self.websocket or self.websocket.closed:
+                print(f"[DEBUG] WebSocket未连接，先初始化...")
                 init_result = await self.initialize()
                 if not init_result['success']:
                     return init_result
@@ -689,57 +699,71 @@ class KoneDriver(ElevatorDriver):
             # 确保buildingId符合v2规范格式: building:${buildingId}
             formatted_building_id = building_id if building_id.startswith("building:") else f"building:{building_id}"
             
-            # 模仿TypeScript示例：不使用顶层requestId (IBC-AI CO.)
+            # 生成唯一request_id用于追踪响应
+            request_id = int(datetime.now().timestamp() * 1000)
+            
+            # 构造ping消息，完全模仿ping.py的成功逻辑
             ping_msg = {
                 "type": "common-api",
                 "buildingId": formatted_building_id,
                 "callType": "ping",
                 "groupId": "1",
                 "payload": {
-                    "request_id": int(datetime.now().timestamp() * 1000)
+                    "request_id": request_id
                 }
             }
             
             start_time = datetime.now()
+            print(f"[DEBUG] 开始ping测试: {building_id}")
+            print(f"[DEBUG] 使用消息队列机制，request_id: {request_id}")
             
-            # 直接发送消息，不等待_send_message的响应匹配 (IBC-AI CO.)
-            async with self.connection_lock:
-                if not await self._connect_websocket():
-                    raise Exception("Failed to establish WebSocket connection")
+            # 注册pending request到消息队列
+            response_future = asyncio.Future()
+            self.pending_requests[request_id] = response_future
+            
+            try:
+                # 发送ping消息
+                async with self.connection_lock:
+                    await self.websocket.send(json.dumps(ping_msg))
+                    print(f"[DEBUG] 已发送ping消息: {json.dumps(ping_msg, indent=2)}")
+                    logger.info(f"Sent ping message: {json.dumps(ping_msg, indent=2)}")
                 
-                await self.websocket.send(json.dumps(ping_msg))
-                logger.info(f"Sent ping message: {json.dumps(ping_msg, indent=2)}")
+                # 等待通过消息队列接收响应
+                timeout_duration = 30
+                print(f"[DEBUG] 等待ping响应，超时: {timeout_duration}秒...")
                 
-                # 等待ping响应消息 (IBC-AI CO.)
-                timeout_duration = 60
                 try:
-                    while True:
-                        response_msg = await asyncio.wait_for(self.message_queue.get(), timeout=timeout_duration)
-                        
-                        # 检查是否是ping响应 (IBC-AI CO.)
-                        if (response_msg.get('type') == 'common-api' and 
-                            response_msg.get('callType') == 'ping'):
-                            end_time = datetime.now()
-                            latency = (end_time - start_time).total_seconds() * 1000
-                            
-                            result = {
-                                'success': True,
-                                'status_code': response_msg.get('statusCode', 200),
-                                'latency_ms': round(latency, 2),
-                                'server_time': response_msg.get('server_time'),
-                                'message': 'Ping successful'
-                            }
-                            logger.info(f"Ping successful: {building_id}, latency: {latency}ms")
-                            return result
-                            
+                    response_data = await asyncio.wait_for(response_future, timeout=timeout_duration)
+                    end_time = datetime.now()
+                    latency = (end_time - start_time).total_seconds() * 1000
+                    
+                    print(f"[DEBUG] 通过消息队列收到ping响应: {json.dumps(response_data, indent=2)}")
+                    
+                    result = {
+                        'success': True,
+                        'status_code': response_data.get('statusCode', 200),
+                        'latency_ms': round(latency, 2),
+                        'server_time': response_data.get('data', {}).get('time'),
+                        'message': 'Ping successful',
+                        'response_data': response_data
+                    }
+                    print(f"[DEBUG] Ping成功: {result}")
+                    logger.info(f"Ping successful: {building_id}, latency: {latency}ms")
+                    return result
+                    
                 except asyncio.TimeoutError:
                     result = {
                         'success': False,
                         'status_code': 408,
                         'error': f'Ping timeout after {timeout_duration}s'
                     }
+                    print(f"[DEBUG] Ping超时: {result}")
                     logger.error(f"Ping timeout: {result}")
                     return result
+                    
+            finally:
+                # 清理pending request
+                self.pending_requests.pop(request_id, None)
                 
         except Exception as e:
             result = {
@@ -747,7 +771,9 @@ class KoneDriver(ElevatorDriver):
                 'status_code': 500,
                 'error': f'Ping failed: {str(e)}'
             }
+            print(f"[DEBUG] Ping错误: {result}")
             logger.error(f"Ping error: {result}")
+            return result
             return result
 
     async def get_actions(self, building_id: str, group_id: str = "1") -> dict:
