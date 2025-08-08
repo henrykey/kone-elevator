@@ -31,10 +31,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TestResult:
-    """测试结果数据结构"""
-    test_id: str
-    name: str
-    status: str  # PASS, FAIL, SKIP, ERROR
+    """测试结果数据结构 - 符合KONE测试指南格式"""
+    test_id: str  # Test编号 (如 "Test 1", "Test 2")
+    name: str  # Test名称
+    description: str  # Description描述
+    expected_result: str  # Expected result期望结果
+    test_result: str  # Test result测试结果 (PASS/FAIL/待填写)
+    status: str  # 内部状态 (PASS, FAIL, SKIP, ERROR)
     duration_ms: float
     error_message: Optional[str] = None
     response_data: Optional[Dict] = None
@@ -44,7 +47,8 @@ class TestResult:
 class ReportGenerator:
     """
     KONE测试报告生成器
-    支持生成Markdown、JSON、HTML、Excel格式的测试报告
+    支持生成符合《KONE Service Robot API Solution Validation Test Guide》格式的多种报告
+    包含Setup、Pre-Test Setup、Date等元信息字段
     """
     
     def __init__(self, company_name: str = "IBC-AI CO."):
@@ -56,11 +60,79 @@ class ReportGenerator:
         """
         self.company_name = company_name
         self.report_timestamp = datetime.now()
+        
+        # 从指南获取的测试用例映射
+        self.test_guide_mapping = self._load_test_guide_mapping()
         logger.info(f"ReportGenerator initialized for {company_name}")
+    
+    def _load_test_guide_mapping(self) -> Dict[str, Dict[str, str]]:
+        """加载测试指南中的测试用例映射"""
+        return {
+            "Test_1": {
+                "name": "Solution initialization",
+                "description": "Solution initialization",
+                "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials"
+            },
+            "Test_2": {
+                "name": "Elevator mode check (non-operational)",
+                "description": "Is the elevator mode operational or not? Note: elevator mode is set to non-operational. Use if applicable to robot use case",
+                "expected_result": "- Elevator mode is true with any of the below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- call is not made"
+            },
+            "Test_3": {
+                "name": "Elevator mode check (operational)",
+                "description": "Is the elevator mode operational or not? Note: elevator is set to operational; Source (any floor) – Destination (any floor)",
+                "expected_result": "- Elevator mode is false with all below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator destination is correct and as requested"
+            },
+            "Test_4": {
+                "name": "Basic elevator call",
+                "description": "Call: Basic call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested"
+            },
+            "Test_5": {
+                "name": "Hold open elevator door",
+                "description": "Call: hold open elevator door -> at Source floor, at Destination floor Note: Use if applicable to robot use case Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Elevator door stays open for\n- duration specified in hard time\n- optionally plus duration specified in soft time"
+            },
+            "Test_6": {
+                "name": "Unlisted action call",
+                "description": "Call: Action call with action id = 200, 0 [Unlisted action (range as in action payload)] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"\n- error message - \" Ignoring call, unknown call action: UNDEFINED\" if 0"
+            },
+            "Test_7": {
+                "name": "Mixed action call (first)",
+                "description": "Call: Action call with action id = 3, 4 [Mixed action call] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\""
+            },
+            "Test_8": {
+                "name": "Mixed action call (second)",
+                "description": "Call: Action call with action id = 3, 4 [Mixed action call] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\""
+            },
+            "Test_9": {
+                "name": "Delay call (valid)",
+                "description": "Call: Delay call with delay = 5 -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested"
+            },
+            "Test_10": {
+                "name": "Delay call (invalid)",
+                "description": "Call: Delay call with delay = 40 -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call allowed and Call cancelled\n- Response code 201\n- error message - \" Invalid json payload\""
+            },
+            # 继续其他测试用例映射...
+        }
+    
+    def _get_test_info_from_guide(self, test_id: str) -> Dict[str, str]:
+        """从测试指南获取测试信息"""
+        guide_info = self.test_guide_mapping.get(test_id, {})
+        return {
+            "name": guide_info.get("name", "Unknown Test"),
+            "description": guide_info.get("description", "待填写"),
+            "expected_result": guide_info.get("expected_result", "待填写")
+        }
     
     def generate_report(self, test_results: List[TestResult], metadata: Dict[str, Any], output_dir: str = ".") -> Dict[str, str]:
         """
-        生成多格式测试报告
+        生成符合KONE测试指南格式的多格式测试报告
         
         Args:
             test_results: 测试结果列表
@@ -71,14 +143,20 @@ class ReportGenerator:
             dict: 包含不同格式报告的字典
         """
         try:
+            # 补充缺失的测试用例字段
+            enhanced_test_results = self._enhance_test_results(test_results)
+            
+            # 补充报告元信息
+            enhanced_metadata = self._enhance_metadata(metadata)
+            
             # 统计测试结果
-            stats = self._calculate_statistics(test_results)
+            stats = self._calculate_statistics(enhanced_test_results)
             
             # 生成报告数据
             report_data = {
-                "metadata": metadata,
+                "metadata": enhanced_metadata,
                 "statistics": stats,
-                "test_results": test_results,
+                "test_results": enhanced_test_results,
                 "generation_time": self.report_timestamp.isoformat(),
                 "company": self.company_name
             }
@@ -99,6 +177,40 @@ class ReportGenerator:
             return {
                 "error": f"Report generation failed: {str(e)}"
             }
+    
+    def _enhance_test_results(self, test_results: List[TestResult]) -> List[TestResult]:
+        """根据测试指南补充测试结果字段"""
+        enhanced_results = []
+        
+        for result in test_results:
+            # 从指南获取标准信息
+            guide_info = self._get_test_info_from_guide(result.test_id)
+            
+            # 如果字段缺失，从指南补充
+            if not hasattr(result, 'description') or not result.description:
+                result.description = guide_info["description"]
+            if not hasattr(result, 'expected_result') or not result.expected_result:
+                result.expected_result = guide_info["expected_result"]
+            if not hasattr(result, 'test_result') or not result.test_result:
+                result.test_result = "PASS" if result.status == "PASS" else "FAIL" if result.status == "FAIL" else "待填写"
+                
+            enhanced_results.append(result)
+        
+        return enhanced_results
+    
+    def _enhance_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """补充报告元信息"""
+        enhanced = metadata.copy()
+        
+        # 补充指南要求的字段
+        enhanced.setdefault("setup", "Get access to the equipment for testing:\n- Virtual equipment, available in KONE API portal\n- Preproduction equipment, by contacting KONE API Support")
+        enhanced.setdefault("pre_test_setup", "Test environments available for the correct KONE API organization.\nBuilding id can be retrieved (/resource endpoint).")
+        enhanced.setdefault("date", datetime.now().strftime("%d.%m.%Y"))
+        enhanced.setdefault("solution_provider", "IBC-AI CO.")
+        enhanced.setdefault("tested_system", "KONE Elevator Control Service")
+        enhanced.setdefault("kone_sr_api_version", "v2.0")
+        
+        return enhanced
     
     def _calculate_statistics(self, test_results: List[TestResult]) -> Dict[str, Any]:
         """
@@ -148,7 +260,7 @@ class ReportGenerator:
     
     def _generate_markdown_report(self, report_data: Dict[str, Any]) -> str:
         """
-        生成Markdown格式报告
+        生成符合KONE测试指南格式的Markdown格式报告
         
         Args:
             report_data: 报告数据
@@ -156,10 +268,8 @@ class ReportGenerator:
         Returns:
             str: Markdown报告内容
         """
-        if JINJA2_AVAILABLE:
-            return self._generate_markdown_with_jinja(report_data)
-        else:
-            return self._generate_markdown_simple(report_data)
+        # 直接使用指南格式的模板，不依赖Jinja2
+        return self._generate_markdown_simple(report_data)
     
     def _generate_markdown_with_jinja(self, report_data: Dict[str, Any]) -> str:
         """使用Jinja2模板生成Markdown报告"""
@@ -231,20 +341,60 @@ class ReportGenerator:
         return template.render(**report_data)
     
     def _generate_markdown_simple(self, report_data: Dict[str, Any]) -> str:
-        """使用简单字符串模板生成Markdown报告"""
+        """使用简单字符串模板生成符合KONE测试指南格式的Markdown报告"""
         stats = report_data["statistics"]
         metadata = report_data["metadata"]
         
-        report = f"""# KONE Service Robot API Validation Test Report
+        report = f"""# KONE Service Robot API Solution Validation Test Report
 
-**Generated by:** {report_data["company"]}  
-**Date:** {report_data["generation_time"]}  
-**Test Framework:** {metadata.get("test_framework", "N/A")}  
-**API Version:** {metadata.get("api_version", "N/A")}
+**SR-API (Service Robot API)**  
+**Version**: 2.0  
+**Author**: {report_data["company"]}
 
 ---
 
-## Executive Summary
+## Document Purpose
+
+Ensuring the quality and security of a solution is every developer's responsibility. This document gives guidance on evaluating the readiness of those solutions that use Service Robot API.
+
+---
+
+## Test Information
+
+### Setup
+{metadata.get("setup", "待填写")}
+
+### Pre-Test Setup  
+{metadata.get("pre_test_setup", "待填写")}
+
+### Date
+| Test Date (dd.mm.yyyy) | Value |
+|-------------------------|-------|
+| Test execution date     | {metadata.get("date", datetime.now().strftime("%d.%m.%Y"))} |
+
+### Solution Provider
+| Item                 | Value |
+|----------------------|-------|
+| Company name         | {metadata.get("solution_provider", "IBC-AI CO.")} |
+| Company address      | {metadata.get("company_address", "待填写")} |
+| Contact person name  | {metadata.get("contact_person", "待填写")} |
+| Email                | {metadata.get("contact_email", "待填写")} |
+| Telephone number     | {metadata.get("contact_phone", "待填写")} |
+| Tester               | {metadata.get("tester", "待填写")} |
+
+### Tested System
+| Item                     | Value |
+|--------------------------|-------|
+| System name              | {metadata.get("tested_system", "KONE Elevator Control Service")} |
+| System version           | {metadata.get("system_version", "待填写")} |
+| Software name            | {metadata.get("software_name", "待填写")} |
+| Software version         | {metadata.get("software_version", "待填写")} |
+| KONE SR-API              | {metadata.get("kone_sr_api_version", "v2.0")} |
+| KONE test assistant email | {metadata.get("kone_assistant_email", "待填写")} |
+
+---
+
+## Test Summary
 
 | Metric | Value |
 |--------|-------|
@@ -258,54 +408,24 @@ class ReportGenerator:
 
 ---
 
-## Test Environment
+## Service Robot API Solution Validation Test Results
 
-- **Building ID:** {metadata.get("building_id", "Unknown")}
-- **API Endpoint:** {metadata.get("api_base_url", "http://localhost:8000")}
-- **Test Session:** {metadata.get("test_session_id", "N/A")}
-- **Company:** {report_data["company"]}
-
----
-
-## Test Results by Category
-
+| Test | Description | Expected result | Test result |
+|------|-------------|-----------------|-------------|
 """
         
-        # 添加分类统计
-        for category, cat_stats in stats["category_breakdown"].items():
-            success_rate = (cat_stats["passed"] / cat_stats["total"] * 100) if cat_stats["total"] > 0 else 0
-            report += f"""### {category}
-- Total: {cat_stats["total"]}
-- Passed: {cat_stats["passed"]} 
-- Failed: {cat_stats["failed"]}
-- Success Rate: {success_rate:.1f}%
-
-"""
+        # 按测试ID排序并添加详细测试结果表格
+        sorted_results = sorted(report_data["test_results"], key=lambda x: int(x.test_id.replace("Test_", "")))
         
-        report += "\n---\n\n## Detailed Test Results\n\n"
-        
-        # 添加详细测试结果
-        for result in report_data["test_results"]:
-            status_icon = {"PASS": "✅", "FAIL": "❌", "ERROR": "⚠️", "SKIP": "⏭️"}.get(result.status, "❓")
+        for result in sorted_results:
+            # 格式化期望结果和测试结果，处理多行文本
+            expected_formatted = result.expected_result.replace('\n', '<br>')
+            test_result_formatted = result.test_result.replace('\n', '<br>') if hasattr(result, 'test_result') else "待填写"
             
-            report += f"""### {result.test_id}: {result.name}
-
-**Status:** {status_icon} {result.status}  
-**Category:** {result.category or 'Unknown'}  
-**Duration:** {result.duration_ms:.2f} ms
-
-"""
-            
-            if result.error_message:
-                report += f"**Error:** `{result.error_message}`\n\n"
-            
-            if result.response_data:
-                report += f"**Response Data:**\n```json\n{json.dumps(result.response_data, indent=2)}\n```\n\n"
-            
-            report += "---\n"
+            report += f"| {result.test_id} | {result.description} | {expected_formatted} | {test_result_formatted} |\n"
         
         # 添加建议
-        report += "\n## Recommendations\n\n"
+        report += "\n---\n\n## Test Analysis and Recommendations\n\n"
         
         if stats["success_rate"] >= 90:
             report += f"✅ **Excellent Performance**: The system demonstrates high reliability with {stats['success_rate']}% success rate.\n"
@@ -510,7 +630,7 @@ class ReportGenerator:
     
     def _generate_json_report(self, report_data: Dict[str, Any]) -> str:
         """
-        生成JSON格式报告
+        生成符合KONE测试指南格式的JSON格式报告
         
         Args:
             report_data: 报告数据
@@ -518,26 +638,52 @@ class ReportGenerator:
         Returns:
             str: JSON报告内容
         """
-        # 转换TestResult对象为字典
+        # 转换TestResult对象为符合指南格式的字典
         json_data = {
-            "report_info": {
-                "company": report_data["company"],
+            "document_info": {
+                "title": "KONE Service Robot API Solution Validation Test Report",
+                "sr_api_version": "2.0",
+                "author": report_data["company"],
                 "generation_time": report_data["generation_time"],
                 "report_version": "1.0"
             },
-            "metadata": report_data["metadata"],
-            "statistics": report_data["statistics"],
+            "setup": {
+                "setup_description": report_data["metadata"].get("setup", "待填写"),
+                "pre_test_setup": report_data["metadata"].get("pre_test_setup", "待填写")
+            },
+            "test_information": {
+                "date": report_data["metadata"].get("date", "待填写"),
+                "solution_provider": {
+                    "company_name": report_data["metadata"].get("solution_provider", "IBC-AI CO."),
+                    "company_address": report_data["metadata"].get("company_address", "待填写"),
+                    "contact_person_name": report_data["metadata"].get("contact_person", "待填写"),
+                    "email": report_data["metadata"].get("contact_email", "待填写"),
+                    "telephone_number": report_data["metadata"].get("contact_phone", "待填写"),
+                    "tester": report_data["metadata"].get("tester", "待填写")
+                },
+                "tested_system": {
+                    "system_name": report_data["metadata"].get("tested_system", "KONE Elevator Control Service"),
+                    "system_version": report_data["metadata"].get("system_version", "待填写"),
+                    "software_name": report_data["metadata"].get("software_name", "待填写"),
+                    "software_version": report_data["metadata"].get("software_version", "待填写"),
+                    "kone_sr_api": report_data["metadata"].get("kone_sr_api_version", "v2.0"),
+                    "kone_test_assistant_email": report_data["metadata"].get("kone_assistant_email", "待填写")
+                }
+            },
+            "test_summary": report_data["statistics"],
             "test_results": [
                 {
-                    "test_id": result.test_id,
-                    "name": result.name,
+                    "test": result.test_id,
+                    "description": getattr(result, 'description', '待填写'),
+                    "expected_result": getattr(result, 'expected_result', '待填写'),
+                    "test_result": getattr(result, 'test_result', '待填写'),
                     "status": result.status,
                     "duration_ms": result.duration_ms,
                     "error_message": result.error_message,
                     "response_data": result.response_data,
                     "category": result.category
                 }
-                for result in report_data["test_results"]
+                for result in sorted(report_data["test_results"], key=lambda x: int(x.test_id.replace("Test_", "")))
             ]
         }
         
@@ -741,7 +887,7 @@ class ReportGenerator:
     
     def _generate_excel_report(self, report_data: Dict[str, Any], output_dir: str = ".") -> str:
         """
-        生成Excel格式报告
+        生成符合KONE测试指南格式的Excel格式报告
         
         Args:
             report_data: 报告数据
@@ -764,40 +910,144 @@ class ReportGenerator:
             border = Border(left=Side(style='thin'), right=Side(style='thin'), 
                           top=Side(style='thin'), bottom=Side(style='thin'))
             
-            # 概要工作表
-            ws_summary = wb.active
-            ws_summary.title = "Summary"
+            # 主报告工作表 - 符合测试指南格式
+            ws_main = wb.active
+            ws_main.title = "Test Report"
             
             # 添加标题
-            ws_summary['A1'] = "KONE Service Robot API Validation Test Report"
-            ws_summary['A1'].font = Font(bold=True, size=16)
-            ws_summary.merge_cells('A1:E1')
+            ws_main['A1'] = "KONE Service Robot API Solution Validation Test Report"
+            ws_main['A1'].font = Font(bold=True, size=16)
+            ws_main.merge_cells('A1:D1')
             
-            # 添加元数据
-            ws_summary['A3'] = "Report Information"
-            ws_summary['A3'].font = header_font
-            ws_summary['A3'].fill = header_fill
+            # 添加文档信息
+            current_row = 3
+            ws_main[f'A{current_row}'] = "SR-API (Service Robot API)"
+            ws_main[f'A{current_row+1}'] = "Version: 2.0"
+            ws_main[f'A{current_row+2}'] = f"Author: {report_data['company']}"
+            current_row += 5
             
-            metadata_rows = [
-                ("Company", report_data["company"]),
-                ("Generation Time", report_data["generation_time"]),
-                ("API Version", report_data["metadata"].get("api_version", "N/A")),
-                ("Test Framework", report_data["metadata"].get("test_framework", "N/A")),
-                ("Building ID", report_data["metadata"].get("building_id", "N/A"))
+            # 添加测试信息部分
+            metadata = report_data["metadata"]
+            
+            # Setup信息
+            ws_main[f'A{current_row}'] = "Setup"
+            ws_main[f'A{current_row}'].font = header_font
+            ws_main[f'A{current_row}'].fill = header_fill
+            current_row += 1
+            ws_main[f'A{current_row}'] = metadata.get("setup", "待填写")
+            current_row += 3
+            
+            # Pre-Test Setup
+            ws_main[f'A{current_row}'] = "Pre-Test Setup"
+            ws_main[f'A{current_row}'].font = header_font
+            ws_main[f'A{current_row}'].fill = header_fill
+            current_row += 1
+            ws_main[f'A{current_row}'] = metadata.get("pre_test_setup", "待填写")
+            current_row += 3
+            
+            # Date
+            ws_main[f'A{current_row}'] = "Date"
+            ws_main[f'B{current_row}'] = "Value"
+            ws_main[f'A{current_row}'].font = header_font
+            ws_main[f'B{current_row}'].font = header_font
+            ws_main[f'A{current_row}'].fill = header_fill
+            ws_main[f'B{current_row}'].fill = header_fill
+            current_row += 1
+            ws_main[f'A{current_row}'] = "Test Date (dd.mm.yyyy)"
+            ws_main[f'B{current_row}'] = metadata.get("date", datetime.now().strftime("%d.%m.%Y"))
+            current_row += 3
+            
+            # Solution Provider
+            ws_main[f'A{current_row}'] = "Solution Provider"
+            ws_main[f'B{current_row}'] = "Value"
+            ws_main[f'A{current_row}'].font = header_font
+            ws_main[f'B{current_row}'].font = header_font
+            ws_main[f'A{current_row}'].fill = header_fill
+            ws_main[f'B{current_row}'].fill = header_fill
+            current_row += 1
+            
+            provider_info = [
+                ("Company name", metadata.get("solution_provider", "IBC-AI CO.")),
+                ("Company address", metadata.get("company_address", "待填写")),
+                ("Contact person name", metadata.get("contact_person", "待填写")),
+                ("Email", metadata.get("contact_email", "待填写")),
+                ("Telephone number", metadata.get("contact_phone", "待填写")),
+                ("Tester", metadata.get("tester", "待填写"))
             ]
             
-            for i, (key, value) in enumerate(metadata_rows, start=4):
-                ws_summary[f'A{i}'] = key
-                ws_summary[f'B{i}'] = value
+            for item, value in provider_info:
+                ws_main[f'A{current_row}'] = item
+                ws_main[f'B{current_row}'] = value
+                current_row += 1
+            current_row += 2
             
-            # 添加统计信息
-            stats_start_row = len(metadata_rows) + 6
-            ws_summary[f'A{stats_start_row}'] = "Test Statistics"
-            ws_summary[f'A{stats_start_row}'].font = header_font
-            ws_summary[f'A{stats_start_row}'].fill = header_fill
+            # Tested System
+            ws_main[f'A{current_row}'] = "Tested System"
+            ws_main[f'B{current_row}'] = "Value"
+            ws_main[f'A{current_row}'].font = header_font
+            ws_main[f'B{current_row}'].font = header_font
+            ws_main[f'A{current_row}'].fill = header_fill
+            ws_main[f'B{current_row}'].fill = header_fill
+            current_row += 1
             
+            system_info = [
+                ("System name", metadata.get("tested_system", "KONE Elevator Control Service")),
+                ("System version", metadata.get("system_version", "待填写")),
+                ("Software name", metadata.get("software_name", "待填写")),
+                ("Software version", metadata.get("software_version", "待填写")),
+                ("KONE SR-API", metadata.get("kone_sr_api_version", "v2.0")),
+                ("KONE test assistant email", metadata.get("kone_assistant_email", "待填写"))
+            ]
+            
+            for item, value in system_info:
+                ws_main[f'A{current_row}'] = item
+                ws_main[f'B{current_row}'] = value
+                current_row += 1
+            current_row += 3
+            
+            # 测试结果表格
+            ws_main[f'A{current_row}'] = "Service Robot API Solution Validation Test Results"
+            ws_main[f'A{current_row}'].font = Font(bold=True, size=14)
+            current_row += 2
+            
+            # 表头
+            headers = ["Test", "Description", "Expected result", "Test result"]
+            for col, header in enumerate(headers, start=1):
+                cell = ws_main.cell(row=current_row, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = center_align
+                cell.border = border
+            current_row += 1
+            
+            # 添加测试结果数据 - 按测试ID排序
+            sorted_results = sorted(report_data["test_results"], key=lambda x: int(x.test_id.replace("Test_", "")))
+            
+            for result in sorted_results:
+                ws_main.cell(row=current_row, column=1, value=result.test_id).border = border
+                ws_main.cell(row=current_row, column=2, value=getattr(result, 'description', '待填写')).border = border
+                ws_main.cell(row=current_row, column=3, value=getattr(result, 'expected_result', '待填写')).border = border
+                ws_main.cell(row=current_row, column=4, value=getattr(result, 'test_result', '待填写')).border = border
+                
+                # 根据状态设置行颜色
+                if result.status == "PASS":
+                    fill = PatternFill(start_color="C8E6C9", end_color="C8E6C9", fill_type="solid")
+                elif result.status == "FAIL":
+                    fill = PatternFill(start_color="FFCDD2", end_color="FFCDD2", fill_type="solid")
+                else:
+                    fill = PatternFill(start_color="FFF3E0", end_color="FFF3E0", fill_type="solid")
+                
+                for col in range(1, 5):
+                    ws_main.cell(row=current_row, column=col).fill = fill
+                
+                current_row += 1
+            
+            # 创建统计汇总工作表
+            ws_summary = wb.create_sheet(title="Test Summary")
+            
+            # 统计信息
             stats = report_data["statistics"]
-            stats_rows = [
+            summary_data = [
                 ("Total Tests", stats["total_tests"]),
                 ("Passed Tests", stats["passed_tests"]),
                 ("Failed Tests", stats["failed_tests"]),
@@ -808,122 +1058,102 @@ class ReportGenerator:
                 ("Average Duration (ms)", stats["average_duration_ms"])
             ]
             
-            for i, (key, value) in enumerate(stats_rows, start=stats_start_row + 1):
+            ws_summary['A1'] = "Test Statistics"
+            ws_summary['A1'].font = Font(bold=True, size=14)
+            
+            for i, (key, value) in enumerate(summary_data, start=3):
                 ws_summary[f'A{i}'] = key
                 ws_summary[f'B{i}'] = value
             
-            # 详细结果工作表
-            ws_details = wb.create_sheet(title="Test Details")
-            
-            # 添加表头
-            headers = ["Test ID", "Test Name", "Status", "Category", "Duration (ms)", "Error Message"]
-            for col, header in enumerate(headers, start=1):
-                cell = ws_details.cell(row=1, column=col, value=header)
-                cell.font = header_font
-                cell.fill = header_fill
-                cell.alignment = center_align
-                cell.border = border
-            
-            # 添加测试结果数据
-            for row, result in enumerate(report_data["test_results"], start=2):
-                ws_details.cell(row=row, column=1, value=result.test_id).border = border
-                ws_details.cell(row=row, column=2, value=result.name).border = border
-                ws_details.cell(row=row, column=3, value=result.status).border = border
-                ws_details.cell(row=row, column=4, value=result.category or "Unknown").border = border
-                ws_details.cell(row=row, column=5, value=result.duration_ms).border = border
-                ws_details.cell(row=row, column=6, value=result.error_message or "").border = border
-                
-                # 根据状态设置行颜色
-                status_colors = {
-                    "PASS": "C8E6C9",
-                    "FAIL": "FFCDD2", 
-                    "ERROR": "FFF3E0",
-                    "SKIP": "F5F5F5"
-                }
-                
-                if result.status in status_colors:
-                    fill = PatternFill(start_color=status_colors[result.status], 
-                                     end_color=status_colors[result.status], fill_type="solid")
-                    for col in range(1, 7):
-                        ws_details.cell(row=row, column=col).fill = fill
-            
             # 自动调整列宽
-            for ws in [ws_summary, ws_details]:
+            for ws in [ws_main, ws_summary]:
                 for column in ws.columns:
                     max_length = 0
-                    column_letter = None
+                    column_letter = column[0].column_letter
                     for cell in column:
-                        try:
-                            # 跳过合并的单元格
-                            if hasattr(cell, 'column_letter'):
-                                if column_letter is None:
-                                    column_letter = cell.column_letter
-                                if cell.value and len(str(cell.value)) > max_length:
-                                    max_length = len(str(cell.value))
-                        except:
-                            pass
-                    
-                    if column_letter:
-                        adjusted_width = min(max_length + 2, 50) if max_length > 0 else 15
-                        ws.column_dimensions[column_letter].width = adjusted_width
+                        if cell.value:
+                            max_length = max(max_length, len(str(cell.value)))
+            # 简化列宽处理 - 直接设置而不遍历列
+            try:
+                # 为主报告工作表设置列宽
+                ws_main.column_dimensions['A'].width = 15  # Test列
+                ws_main.column_dimensions['B'].width = 40  # Description列  
+                ws_main.column_dimensions['C'].width = 50  # Expected result列
+                ws_main.column_dimensions['D'].width = 20  # Test result列
+                
+                # 为统计工作表设置列宽
+                ws_summary.column_dimensions['A'].width = 25  # 统计项目
+                ws_summary.column_dimensions['B'].width = 15  # 数值
+            except Exception as e:
+                logger.warning(f"Column width adjustment failed: {e}")
             
             # 保存文件
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"KONE_Test_Report_{timestamp}.xlsx"
             output_path = Path(output_dir)
             output_path.mkdir(exist_ok=True)
-            filepath = output_path / filename
-            wb.save(filepath)
             
-            logger.info(f"Excel report saved as {filepath}")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"KONE_Validation_Report_{timestamp}.xlsx"
+            filepath = output_path / filename
+            
+            wb.save(str(filepath))
+            
+            logger.info(f"Excel report saved to: {filepath}")
             return str(filepath)
             
         except Exception as e:
             logger.error(f"Failed to generate Excel report: {e}")
             return f"Excel generation failed: {str(e)}"
     
-    def save_reports_to_files(self, reports: Dict[str, str], base_filename: str = "KONE_Test_Report") -> Dict[str, str]:
+    def save_reports_to_files(self, reports: Dict[str, str], base_filename: str) -> Dict[str, str]:
         """
         将报告保存到文件
         
         Args:
-            reports: 报告内容字典
+            reports: 报告字典
             base_filename: 基础文件名
             
         Returns:
             dict: 保存的文件路径字典
         """
-        timestamp = self.report_timestamp.strftime("%Y%m%d_%H%M%S")
         saved_files = {}
         
         try:
-            # 确保reports目录存在
-            reports_dir = Path("reports")
+            reports_dir = Path("./reports")
             reports_dir.mkdir(exist_ok=True)
             
-            # 保存各种格式的报告
-            file_extensions = {
-                "markdown": ".md",
-                "json": ".json", 
-                "html": ".html"
-            }
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
-            for format_name, content in reports.items():
-                if format_name in file_extensions:
-                    filename = f"{base_filename}_{timestamp}{file_extensions[format_name]}"
-                    filepath = reports_dir / filename
-                    
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        f.write(content)
-                    
-                    saved_files[format_name] = str(filepath)
-                    logger.info(f"Saved {format_name} report as {filepath}")
-                elif format_name == "excel":
-                    # Excel文件已经在生成时保存
-                    saved_files[format_name] = content
+            # 保存各种格式的报告
+            if "markdown" in reports:
+                md_filename = f"{base_filename}_{timestamp}.md"
+                md_filepath = reports_dir / md_filename
+                with open(md_filepath, 'w', encoding='utf-8') as f:
+                    f.write(reports["markdown"])
+                saved_files["markdown"] = str(md_filepath)
+                logger.info(f"Markdown report saved: {md_filepath}")
+            
+            if "json" in reports:
+                json_filename = f"{base_filename}_{timestamp}.json"
+                json_filepath = reports_dir / json_filename
+                with open(json_filepath, 'w', encoding='utf-8') as f:
+                    f.write(reports["json"])
+                saved_files["json"] = str(json_filepath)
+                logger.info(f"JSON report saved: {json_filepath}")
+            
+            if "html" in reports:
+                html_filename = f"{base_filename}_{timestamp}.html"
+                html_filepath = reports_dir / html_filename
+                with open(html_filepath, 'w', encoding='utf-8') as f:
+                    f.write(reports["html"])
+                saved_files["html"] = str(html_filepath)
+                logger.info(f"HTML report saved: {html_filepath}")
+            
+            # Excel文件路径已在_generate_excel_report中处理
+            if "excel" in reports and not reports["excel"].startswith("Excel generation"):
+                saved_files["excel"] = reports["excel"]
             
             return saved_files
             
         except Exception as e:
             logger.error(f"Failed to save reports: {e}")
-            return {"error": str(e)}
+            return {"error": f"File saving failed: {str(e)}"}

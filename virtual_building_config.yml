@@ -1,376 +1,789 @@
 building:
   api_version: 3
-  id: 4TFxWRCv23D
-  name: Virtual Building 4TFxWRCv23D
+  id: L1QinntdEOg
+  name: Virtual Building L1QinntdEOg
+destinations: []
 elevator_groups:
   group_1:
     lifts:
-    - id: Lift A
+    - id: A
+      lift_id: 1
       type: passenger
-    - id: Lift B
+    - id: B
+      lift_id: 2
       type: passenger
-    - id: Lift C
+    - id: C
+      lift_id: 3
       type: passenger
-    - id: Lift D
+    - id: D
+      lift_id: 4
+      type: passenger
+    - id: E
+      lift_id: 5
+      type: passenger
+    - id: F
+      lift_id: 6
+      type: passenger
+    - id: G
+      lift_id: 7
+      type: passenger
+    - id: H
+      lift_id: 8
       type: passenger
 floors:
   f_1:
     areas:
     - area_id: 1000
+      exit: true
       short_name: '1'
       side: 1
     - area_id: 1010
+      exit: true
       short_name: 1R
       side: 2
     level: 1
+    short_name: '1'
   f_10:
     areas:
     - area_id: 10000
+      exit: false
       short_name: '10'
       side: 1
     - area_id: 10010
+      exit: false
       short_name: 10R
       side: 2
     level: 10
+    short_name: '10'
   f_11:
     areas:
     - area_id: 11000
+      exit: false
       short_name: '11'
       side: 1
     - area_id: 11010
+      exit: false
       short_name: 11R
       side: 2
     level: 11
+    short_name: '11'
   f_12:
     areas:
     - area_id: 12000
+      exit: false
       short_name: '12'
       side: 1
     - area_id: 12010
+      exit: false
       short_name: 12R
       side: 2
     level: 12
+    short_name: '12'
   f_13:
     areas:
     - area_id: 13000
+      exit: false
       short_name: '13'
       side: 1
     - area_id: 13010
+      exit: false
       short_name: 13R
       side: 2
     level: 13
+    short_name: '13'
   f_14:
     areas:
     - area_id: 14000
+      exit: false
       short_name: '14'
       side: 1
     - area_id: 14010
+      exit: false
       short_name: 14R
       side: 2
     level: 14
+    short_name: '14'
   f_15:
     areas:
     - area_id: 15000
+      exit: false
       short_name: '15'
       side: 1
     - area_id: 15010
+      exit: false
       short_name: 15R
       side: 2
     level: 15
+    short_name: '15'
   f_16:
     areas:
     - area_id: 16000
+      exit: false
       short_name: '16'
       side: 1
     - area_id: 16010
+      exit: false
       short_name: 16R
       side: 2
     level: 16
+    short_name: '16'
   f_17:
     areas:
     - area_id: 17000
+      exit: false
       short_name: '17'
       side: 1
     - area_id: 17010
+      exit: false
       short_name: 17R
       side: 2
     level: 17
+    short_name: '17'
   f_18:
     areas:
     - area_id: 18000
+      exit: false
       short_name: '18'
       side: 1
     - area_id: 18010
+      exit: false
       short_name: 18R
       side: 2
     level: 18
+    short_name: '18'
   f_19:
     areas:
     - area_id: 19000
+      exit: false
       short_name: '19'
       side: 1
     - area_id: 19010
+      exit: false
       short_name: 19R
       side: 2
     level: 19
+    short_name: '19'
   f_2:
     areas:
     - area_id: 2000
+      exit: false
       short_name: '2'
       side: 1
     - area_id: 2010
+      exit: false
       short_name: 2R
       side: 2
     level: 2
+    short_name: '2'
   f_20:
     areas:
     - area_id: 20000
+      exit: false
       short_name: '20'
       side: 1
     - area_id: 20010
+      exit: false
       short_name: 20R
       side: 2
     level: 20
+    short_name: '20'
   f_21:
     areas:
     - area_id: 21000
+      exit: false
       short_name: '21'
       side: 1
     - area_id: 21010
+      exit: false
       short_name: 21R
       side: 2
     level: 21
+    short_name: '21'
   f_22:
     areas:
     - area_id: 22000
+      exit: false
       short_name: '22'
       side: 1
     - area_id: 22010
+      exit: false
       short_name: 22R
       side: 2
     level: 22
+    short_name: '22'
   f_23:
     areas:
     - area_id: 23000
+      exit: false
       short_name: '23'
       side: 1
     - area_id: 23010
+      exit: false
       short_name: 23R
       side: 2
     level: 23
+    short_name: '23'
   f_24:
     areas:
     - area_id: 24000
+      exit: false
       short_name: '24'
       side: 1
     - area_id: 24010
+      exit: false
       short_name: 24R
       side: 2
     level: 24
+    short_name: '24'
   f_25:
     areas:
     - area_id: 25000
+      exit: false
       short_name: '25'
       side: 1
     - area_id: 25010
+      exit: false
       short_name: 25R
       side: 2
     level: 25
+    short_name: '25'
   f_26:
     areas:
     - area_id: 26000
+      exit: false
       short_name: '26'
       side: 1
     - area_id: 26010
+      exit: false
       short_name: 26R
       side: 2
     level: 26
+    short_name: '26'
   f_27:
     areas:
     - area_id: 27000
+      exit: false
       short_name: '27'
       side: 1
     - area_id: 27010
+      exit: false
       short_name: 27R
       side: 2
     level: 27
+    short_name: '27'
   f_28:
     areas:
     - area_id: 28000
+      exit: false
       short_name: '28'
       side: 1
     - area_id: 28010
+      exit: false
       short_name: 28R
       side: 2
     level: 28
+    short_name: '28'
   f_29:
     areas:
     - area_id: 29000
+      exit: false
       short_name: '29'
       side: 1
     - area_id: 29010
+      exit: false
       short_name: 29R
       side: 2
     level: 29
+    short_name: '29'
   f_3:
     areas:
     - area_id: 3000
+      exit: false
       short_name: '3'
       side: 1
     - area_id: 3010
+      exit: false
       short_name: 3R
       side: 2
     level: 3
+    short_name: '3'
   f_30:
     areas:
     - area_id: 30000
+      exit: false
       short_name: '30'
       side: 1
     - area_id: 30010
+      exit: false
       short_name: 30R
       side: 2
     level: 30
+    short_name: '30'
   f_31:
     areas:
     - area_id: 31000
+      exit: false
       short_name: '31'
       side: 1
     - area_id: 31010
+      exit: false
       short_name: 31R
       side: 2
     level: 31
+    short_name: '31'
   f_32:
     areas:
     - area_id: 32000
+      exit: false
       short_name: '32'
       side: 1
     - area_id: 32010
+      exit: false
       short_name: 32R
       side: 2
     level: 32
+    short_name: '32'
   f_33:
     areas:
     - area_id: 33000
+      exit: false
       short_name: '33'
       side: 1
     - area_id: 33010
+      exit: false
       short_name: 33R
       side: 2
     level: 33
+    short_name: '33'
   f_34:
     areas:
     - area_id: 34000
+      exit: false
       short_name: '34'
       side: 1
     - area_id: 34010
+      exit: false
       short_name: 34R
       side: 2
     level: 34
+    short_name: '34'
   f_35:
     areas:
     - area_id: 35000
+      exit: false
       short_name: '35'
       side: 1
     - area_id: 35010
+      exit: false
       short_name: 35R
       side: 2
     level: 35
+    short_name: '35'
   f_36:
     areas:
     - area_id: 36000
+      exit: false
       short_name: '36'
       side: 1
     - area_id: 36010
+      exit: false
       short_name: 36R
       side: 2
     level: 36
+    short_name: '36'
   f_37:
     areas:
     - area_id: 37000
+      exit: false
       short_name: '37'
       side: 1
     - area_id: 37010
+      exit: false
       short_name: 37R
       side: 2
     level: 37
+    short_name: '37'
   f_38:
     areas:
     - area_id: 38000
+      exit: false
       short_name: '38'
       side: 1
     - area_id: 38010
+      exit: false
       short_name: 38R
       side: 2
     level: 38
+    short_name: '38'
   f_39:
     areas:
     - area_id: 39000
+      exit: false
       short_name: '39'
       side: 1
     - area_id: 39010
+      exit: false
       short_name: 39R
       side: 2
     level: 39
+    short_name: '39'
   f_4:
     areas:
     - area_id: 4000
+      exit: false
       short_name: '4'
       side: 1
     - area_id: 4010
+      exit: false
       short_name: 4R
       side: 2
     level: 4
+    short_name: '4'
   f_40:
     areas:
     - area_id: 40000
+      exit: false
       short_name: '40'
       side: 1
     - area_id: 40010
+      exit: false
       short_name: 40R
       side: 2
     level: 40
+    short_name: '40'
+  f_41:
+    areas:
+    - area_id: 41000
+      exit: false
+      short_name: '41'
+      side: 1
+    - area_id: 41010
+      exit: false
+      short_name: 41R
+      side: 2
+    level: 41
+    short_name: '41'
+  f_42:
+    areas:
+    - area_id: 42000
+      exit: false
+      short_name: '42'
+      side: 1
+    - area_id: 42010
+      exit: false
+      short_name: 42R
+      side: 2
+    level: 42
+    short_name: '42'
+  f_43:
+    areas:
+    - area_id: 43000
+      exit: false
+      short_name: '43'
+      side: 1
+    - area_id: 43010
+      exit: false
+      short_name: 43R
+      side: 2
+    level: 43
+    short_name: '43'
+  f_44:
+    areas:
+    - area_id: 44000
+      exit: false
+      short_name: '44'
+      side: 1
+    - area_id: 44010
+      exit: false
+      short_name: 44R
+      side: 2
+    level: 44
+    short_name: '44'
+  f_45:
+    areas:
+    - area_id: 45000
+      exit: false
+      short_name: '45'
+      side: 1
+    - area_id: 45010
+      exit: false
+      short_name: 45R
+      side: 2
+    level: 45
+    short_name: '45'
+  f_46:
+    areas:
+    - area_id: 46000
+      exit: false
+      short_name: '46'
+      side: 1
+    - area_id: 46010
+      exit: false
+      short_name: 46R
+      side: 2
+    level: 46
+    short_name: '46'
+  f_47:
+    areas:
+    - area_id: 47000
+      exit: false
+      short_name: '47'
+      side: 1
+    - area_id: 47010
+      exit: false
+      short_name: 47R
+      side: 2
+    level: 47
+    short_name: '47'
+  f_48:
+    areas:
+    - area_id: 48000
+      exit: false
+      short_name: '48'
+      side: 1
+    - area_id: 48010
+      exit: false
+      short_name: 48R
+      side: 2
+    level: 48
+    short_name: '48'
+  f_49:
+    areas:
+    - area_id: 49000
+      exit: false
+      short_name: '49'
+      side: 1
+    - area_id: 49010
+      exit: false
+      short_name: 49R
+      side: 2
+    level: 49
+    short_name: '49'
   f_5:
     areas:
     - area_id: 5000
+      exit: false
       short_name: '5'
       side: 1
     - area_id: 5010
+      exit: false
       short_name: 5R
       side: 2
     level: 5
+    short_name: '5'
+  f_50:
+    areas:
+    - area_id: 50000
+      exit: false
+      short_name: '50'
+      side: 1
+    - area_id: 50010
+      exit: false
+      short_name: 50R
+      side: 2
+    level: 50
+    short_name: '50'
+  f_51:
+    areas:
+    - area_id: 51000
+      exit: false
+      short_name: '51'
+      side: 1
+    - area_id: 51010
+      exit: false
+      short_name: 51R
+      side: 2
+    level: 51
+    short_name: '51'
+  f_52:
+    areas:
+    - area_id: 52000
+      exit: false
+      short_name: '52'
+      side: 1
+    - area_id: 52010
+      exit: false
+      short_name: 52R
+      side: 2
+    level: 52
+    short_name: '52'
+  f_53:
+    areas:
+    - area_id: 53000
+      exit: false
+      short_name: '53'
+      side: 1
+    - area_id: 53010
+      exit: false
+      short_name: 53R
+      side: 2
+    level: 53
+    short_name: '53'
+  f_54:
+    areas:
+    - area_id: 54000
+      exit: false
+      short_name: '54'
+      side: 1
+    - area_id: 54010
+      exit: false
+      short_name: 54R
+      side: 2
+    level: 54
+    short_name: '54'
+  f_55:
+    areas:
+    - area_id: 55000
+      exit: false
+      short_name: '55'
+      side: 1
+    - area_id: 55010
+      exit: false
+      short_name: 55R
+      side: 2
+    level: 55
+    short_name: '55'
+  f_56:
+    areas:
+    - area_id: 56000
+      exit: false
+      short_name: '56'
+      side: 1
+    - area_id: 56010
+      exit: false
+      short_name: 56R
+      side: 2
+    level: 56
+    short_name: '56'
+  f_57:
+    areas:
+    - area_id: 57000
+      exit: false
+      short_name: '57'
+      side: 1
+    - area_id: 57010
+      exit: false
+      short_name: 57R
+      side: 2
+    level: 57
+    short_name: '57'
+  f_58:
+    areas:
+    - area_id: 58000
+      exit: false
+      short_name: '58'
+      side: 1
+    - area_id: 58010
+      exit: false
+      short_name: 58R
+      side: 2
+    level: 58
+    short_name: '58'
+  f_59:
+    areas:
+    - area_id: 59000
+      exit: false
+      short_name: '59'
+      side: 1
+    - area_id: 59010
+      exit: false
+      short_name: 59R
+      side: 2
+    level: 59
+    short_name: '59'
   f_6:
     areas:
     - area_id: 6000
+      exit: false
       short_name: '6'
       side: 1
     - area_id: 6010
+      exit: false
       short_name: 6R
       side: 2
     level: 6
+    short_name: '6'
+  f_60:
+    areas:
+    - area_id: 60000
+      exit: false
+      short_name: '60'
+      side: 1
+    - area_id: 60010
+      exit: false
+      short_name: 60R
+      side: 2
+    level: 60
+    short_name: '60'
+  f_61:
+    areas:
+    - area_id: 61000
+      exit: false
+      short_name: '61'
+      side: 1
+    - area_id: 61010
+      exit: false
+      short_name: 61R
+      side: 2
+    level: 61
+    short_name: '61'
+  f_62:
+    areas:
+    - area_id: 62000
+      exit: false
+      short_name: '62'
+      side: 1
+    - area_id: 62010
+      exit: false
+      short_name: 62R
+      side: 2
+    level: 62
+    short_name: '62'
+  f_63:
+    areas:
+    - area_id: 63000
+      exit: false
+      short_name: '63'
+      side: 1
+    - area_id: 63010
+      exit: false
+      short_name: 63R
+      side: 2
+    level: 63
+    short_name: '63'
   f_7:
     areas:
     - area_id: 7000
+      exit: false
       short_name: '7'
       side: 1
     - area_id: 7010
+      exit: false
       short_name: 7R
       side: 2
     level: 7
+    short_name: '7'
   f_8:
     areas:
     - area_id: 8000
+      exit: false
       short_name: '8'
       side: 1
     - area_id: 8010
+      exit: false
       short_name: 8R
       side: 2
     level: 8
+    short_name: '8'
   f_9:
     areas:
     - area_id: 9000
+      exit: false
       short_name: '9'
       side: 1
     - area_id: 9010
+      exit: false
       short_name: 9R
       side: 2
     level: 9
+    short_name: '9'

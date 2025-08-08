@@ -409,12 +409,58 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
         if not report_generator:
             raise Exception("Report generator not available from phase 1 setup")
         
-        # 转换测试结果为ReportGenerator期望的格式
+        # 转换测试结果为ReportGenerator期望的格式，补充指南要求的字段
         formatted_results = []
+        
+        # 测试用例的映射信息（从指南获取）
+        test_guide_info = {
+            "Test_1": {
+                "name": "Solution initialization",
+                "description": "Solution initialization",
+                "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials"
+            },
+            "Test_2": {
+                "name": "API connectivity verification", 
+                "description": "Verification of API connectivity and WebSocket establishment",
+                "expected_result": "- WebSocket connection established successfully\n- API endpoints accessible\n- Authentication working properly"
+            },
+            "Test_3": {
+                "name": "Service status check",
+                "description": "Check if elevator service is operational",
+                "expected_result": "- Service status check successful\n- System operational status confirmed"
+            },
+            "Test_4": {
+                "name": "Building configuration validation",
+                "description": "Validate building configuration retrieval",
+                "expected_result": "- Building configuration retrieved successfully\n- Configuration data complete and valid"
+            },
+            "Test_5": {
+                "name": "WebSocket handshake verification",
+                "description": "Verify WebSocket handshake process",
+                "expected_result": "- WebSocket handshake completed successfully\n- Connection stable and ready for communication"
+            },
+            "Test_6": {
+                "name": "Basic destination call",
+                "description": "Call: Basic call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested"
+            }
+            # 可以继续添加其他测试用例的映射...
+        }
+        
         for result_data in test_results.get("test_results", []):
+            # 从映射获取测试信息，如果没有则使用默认值
+            guide_info = test_guide_info.get(result_data["test_id"], {})
+            test_name = guide_info.get("name", result_data["name"])
+            description = guide_info.get("description", result_data["name"])
+            expected_result = guide_info.get("expected_result", "测试应该成功执行并返回预期结果")
+            test_result_text = "PASS" if result_data["status"] == "PASS" else "FAIL" if result_data["status"] == "FAIL" else "待填写"
+            
             test_result = TestResult(
                 test_id=result_data["test_id"],
-                name=result_data["name"],
+                name=test_name,
+                description=description,
+                expected_result=expected_result,
+                test_result=test_result_text,
                 status=result_data["status"],
                 duration_ms=result_data["duration_ms"],
                 error_message=result_data.get("error_message"),
@@ -423,13 +469,29 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
             )
             formatted_results.append(test_result)
         
-        # 准备完整的元数据
+        # 准备符合指南要求的完整元数据
         complete_metadata = {
             **metadata,
             "building_id": setup_data.get("building_manager", {}).get_building_id() if setup_data.get("building_manager") else "Unknown",
             "total_test_duration_ms": test_results.get("duration_ms", 0),
             "test_execution_time": test_results.get("end_time"),
-            "setup_duration_ms": setup_data.get("duration_ms", 0) if isinstance(setup_data, dict) else 0
+            "setup_duration_ms": setup_data.get("duration_ms", 0) if isinstance(setup_data, dict) else 0,
+            # 从指南要求的额外字段
+            "setup": "Get access to the equipment for testing:\n- Virtual equipment, available in KONE API portal\n- Preproduction equipment, by contacting KONE API Support (api-support@kone.com)",
+            "pre_test_setup": "- Test environments available for the correct KONE API organization.\n- Building id can be retrieved (/resource endpoint).",
+            "date": datetime.now().strftime("%d.%m.%Y"),
+            "solution_provider": "IBC-AI CO.",
+            "company_address": "待填写",
+            "contact_person": "待填写", 
+            "contact_email": "待填写",
+            "contact_phone": "待填写",
+            "tester": "自动化测试系统",
+            "tested_system": "KONE Elevator Control Service",
+            "system_version": "待填写",
+            "software_name": "KONE SR-API Test Suite",
+            "software_version": "2.0.0",
+            "kone_sr_api_version": "v2.0",
+            "kone_assistant_email": "待填写"
         }
         
         # 生成多格式报告
