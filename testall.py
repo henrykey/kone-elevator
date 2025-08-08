@@ -863,7 +863,7 @@ async def main():
             guide_info = test_guide_info.get(result["test_id"], {})
             test_name = guide_info.get("name", result["scenario"])
             description = guide_info.get("description", result["scenario"])
-            expected_result = guide_info.get("expected_result", "测试应该成功执行并返回预期结果")
+            expected_result = guide_info.get("expected_result", "Test should execute successfully and return expected results")
             
             test_result = TestResult(
                 test_id=result["test_id"],
