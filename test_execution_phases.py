@@ -452,7 +452,7 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
             guide_info = test_guide_info.get(result_data["test_id"], {})
             test_name = guide_info.get("name", result_data["name"])
             description = guide_info.get("description", result_data["name"])
-            expected_result = guide_info.get("expected_result", "测试应该成功执行并返回预期结果")
+            expected_result = guide_info.get("expected_result", "Test should execute successfully and return expected results")
             test_result_text = "PASS" if result_data["status"] == "PASS" else "FAIL" if result_data["status"] == "FAIL" else "待填写"
             
             test_result = TestResult(

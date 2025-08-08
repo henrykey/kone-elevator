@@ -2,10 +2,17 @@
 # Author: IBC-AI CO.
 """
 独立的报告生成测试脚本
-测试KONE验证系统的报告生成功能，不依赖API服务
-"""
-
-import asyncio
+测试KONE验证系统的报告生成功能，不依赖API    for test_id, name, category, duration in skip_tests:
+        test_results.append(TestResult(
+            test_id=test_id,
+            name=name,
+            description=f"Test case for {name.lower()}",
+            expected_result="Test execution should be successful and return expected results",
+            test_result="SKIP",
+            status=TestStatus.SKIP,
+            duration_ms=duration,
+            category=category.value
+        ))import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +54,9 @@ def create_mock_test_results() -> list:
         test_results.append(TestResult(
             test_id=test_id,
             name=name,
+            description=f"Test case for {name.lower()}",
+            expected_result="Test execution should be successful and return expected results",
+            test_result="PASS",
             status=TestStatus.PASS,
             duration_ms=duration,
             category=category.value,
@@ -63,6 +73,9 @@ def create_mock_test_results() -> list:
         test_results.append(TestResult(
             test_id=test_id,
             name=name,
+            description=f"Test case for {name.lower()}",
+            expected_result="Test execution should be successful and return expected results",
+            test_result="FAIL",
             status=TestStatus.FAIL,
             duration_ms=duration,
             category=category.value,

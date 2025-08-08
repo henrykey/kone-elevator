@@ -126,11 +126,11 @@ class ReportGenerator:
         guide_info = self.test_guide_mapping.get(test_id, {})
         return {
             "name": guide_info.get("name", "Unknown Test"),
-            "description": guide_info.get("description", "待填写"),
-            "expected_result": guide_info.get("expected_result", "待填写")
+            "description": guide_info.get("description", "To be filled"),
+            "expected_result": guide_info.get("expected_result", "Test should execute successfully and return expected results")
         }
     
-    def generate_report(self, test_results: List[TestResult], metadata: Dict[str, Any], output_dir: str = ".") -> Dict[str, str]:
+    def generate_report(self, test_results: List[TestResult], metadata: Dict[str, Any], output_dir: str = ".", config: Dict[str, Any] = None) -> Dict[str, str]:
         """
         生成符合KONE测试指南格式的多格式测试报告
         
@@ -138,6 +138,7 @@ class ReportGenerator:
             test_results: 测试结果列表
             metadata: 测试元数据
             output_dir: 输出目录路径
+            config: 配置信息（包含solution provider等）
             
         Returns:
             dict: 包含不同格式报告的字典
@@ -158,7 +159,8 @@ class ReportGenerator:
                 "statistics": stats,
                 "test_results": enhanced_test_results,
                 "generation_time": self.report_timestamp.isoformat(),
-                "company": self.company_name
+                "company": self.company_name,
+                "config": config or {}
             }
             
             # 生成各种格式的报告
@@ -258,6 +260,19 @@ class ReportGenerator:
             "category_breakdown": category_stats
         }
     
+    def _get_solution_provider_info(self, config):
+        """Get solution provider information from config or defaults"""
+        provider_info = config.get('solution_provider', {})
+        
+        return {
+            'company_name': provider_info.get('company_name', 'To be filled'),
+            'company_address': provider_info.get('company_address', 'To be filled'),
+            'contact_person_name': provider_info.get('contact_person_name', 'To be filled'),
+            'contact_email': provider_info.get('contact_email', 'To be filled'),
+            'contact_phone': provider_info.get('contact_phone', 'To be filled'),
+            'tester': provider_info.get('tester', 'Automated Test System')
+        }
+    
     def _generate_markdown_report(self, report_data: Dict[str, Any]) -> str:
         """
         生成符合KONE测试指南格式的Markdown格式报告
@@ -344,6 +359,10 @@ class ReportGenerator:
         """使用简单字符串模板生成符合KONE测试指南格式的Markdown报告"""
         stats = report_data["statistics"]
         metadata = report_data["metadata"]
+        config = report_data.get("config", {})
+        
+        # Get provider info from config
+        provider_info = self._get_solution_provider_info(config)
         
         report = f"""# KONE Service Robot API Solution Validation Test Report
 
@@ -362,10 +381,10 @@ Ensuring the quality and security of a solution is every developer's responsibil
 ## Test Information
 
 ### Setup
-{metadata.get("setup", "待填写")}
+{metadata.get("setup", "To be filled")}
 
 ### Pre-Test Setup  
-{metadata.get("pre_test_setup", "待填写")}
+{metadata.get("pre_test_setup", "To be filled")}
 
 ### Date
 | Test Date (dd.mm.yyyy) | Value |
@@ -375,12 +394,12 @@ Ensuring the quality and security of a solution is every developer's responsibil
 ### Solution Provider
 | Item                 | Value |
 |----------------------|-------|
-| Company name         | {metadata.get("solution_provider", "IBC-AI CO.")} |
-| Company address      | {metadata.get("company_address", "待填写")} |
-| Contact person name  | {metadata.get("contact_person", "待填写")} |
-| Email                | {metadata.get("contact_email", "待填写")} |
-| Telephone number     | {metadata.get("contact_phone", "待填写")} |
-| Tester               | {metadata.get("tester", "待填写")} |
+| Company name         | {provider_info['company_name']} |
+| Company address      | {provider_info['company_address']} |
+| Contact person name  | {provider_info['contact_person_name']} |
+| Email                | {provider_info['contact_email']} |
+| Telephone number     | {provider_info['contact_phone']} |
+| Tester               | {provider_info['tester']} |
 
 ### Tested System
 | Item                     | Value |

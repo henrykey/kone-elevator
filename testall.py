@@ -23,7 +23,7 @@ def load_config():
     """Load configuration file"""
     with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
-    return config['kone']
+    return config
 
 def get_access_token(client_id, client_secret, token_endpoint):
     """Get access token"""
@@ -534,7 +534,7 @@ async def multi_scenario_test():
         
         # 1. Get available buildings list
         print("\n🔍 Step : Get available building list...")
-        building_info_list, token = await get_available_buildings_list(config)
+        building_info_list, token = await get_available_buildings_list(config['kone'])
         
         if not building_info_list:
             print("⚠️ Failed to get building list, using default buildings")
@@ -809,6 +809,9 @@ async def main():
     """Main function"""
     print(f"🕒 Test Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
+    # Load configuration
+    config = load_config()
+    
     success, test_results = await multi_scenario_test()
     
     # Generate comprehensive test reports
@@ -909,7 +912,7 @@ async def main():
         reports_dir.mkdir(exist_ok=True)
         
         generator = ReportGenerator("IBC-AI CO.")
-        reports = generator.generate_report(report_test_results, metadata, str(reports_dir))
+        reports = generator.generate_report(report_test_results, metadata, str(reports_dir), config)
         
         # Save additional formats to files
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
