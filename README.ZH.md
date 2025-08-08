@@ -150,6 +150,25 @@ elevator/
 
 ---
 
+## 配置 Solution Provider 信息
+
+在 `config.yaml` 文件中，您可以通过 `solution_provider` 字段配置报告中的“Solution Provider”信息。例如：
+
+```yaml
+solution_provider:
+  company_name: IBC-AI CO.
+  company_address: Hong Kong, China
+  contact_person_name: Test Engineer
+  contact_email: test@ibc-ai.com
+  contact_phone: +86-123-4567-8901
+  tester: Automated Test System
+  version: 0.2.1
+```
+
+这些信息会自动出现在生成的测试报告的“Solution Provider”表格中。
+
+---
+
 ## 🏆 项目亮点
 - ✅ 100%通过KONE官方37项测试
 - ✅ 多格式专业报告输出

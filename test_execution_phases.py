@@ -395,6 +395,16 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
     logger.info("📝 Phase 3: Report Generation")
     start_time = time.time()
     
+    # 加载配置文件
+    config = {}
+    try:
+        import yaml
+        with open('config.yaml', 'r') as f:
+            config = yaml.safe_load(f)
+        logger.info("✅ Configuration loaded for report generation")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not load config.yaml: {e}")
+    
     report_result = {
         "phase": "phase_3_report_generation",
         "status": "IN_PROGRESS",
@@ -496,7 +506,7 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
         
         # 生成多格式报告
         logger.info("📊 Generating multi-format reports...")
-        reports = report_generator.generate_report(formatted_results, complete_metadata, "reports")
+        reports = report_generator.generate_report(formatted_results, complete_metadata, "reports", config)
         
         if "error" in reports:
             raise Exception(f"Report generation failed: {reports['error']}")
