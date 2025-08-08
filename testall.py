@@ -153,16 +153,17 @@ async def test_elevator_scenario(websocket, scenario_name, test_id, call_data, t
         success = any(r.get('callType') == 'ping' for r in responses)
     else:
         success = any(r.get('statusCode') == 201 for r in responses)
-        
+
     end_time = time.time()
     duration_ms = (end_time - start_time) * 1000
-        
+
     if success:
         print(f'[✅] {scenario_name} - Test passed! (Duration: {duration_ms:.1f}ms)')
     else:
         print(f'[❌] {scenario_name} - Test failed (Duration: {duration_ms:.1f}ms)')
-        
-    return success, duration_ms
+
+    # 返回响应数据
+    return success, duration_ms, responses
 
 def sort_buildings_by_preference(buildings):
     """
@@ -731,7 +732,7 @@ async def multi_scenario_test():
         for i, scenario in enumerate(test_scenarios, 1):
             try:
                 print(f"\n📊 Progress: {i}/{len(test_scenarios)}")
-                success, duration_ms = await test_elevator_scenario(
+                success, duration_ms, responses = await test_elevator_scenario(
                     websocket, 
                     scenario["name"], 
                     scenario["test_id"], 
@@ -744,12 +745,13 @@ async def multi_scenario_test():
                     "test_id": scenario["test_id"],
                     "success": success,
                     "duration_ms": duration_ms,
-                    "category": scenario.get("category", "unknown")
+                    "category": scenario.get("category", "unknown"),
+                    "response_data": responses
                 })
-                
+
                 # Brief delay to avoid too rapid requests
                 await asyncio.sleep(0.5)
-                
+
             except Exception as e:
                 print(f'[💥] {scenario["name"]} exception: {e}')
                 results.append({
@@ -758,7 +760,8 @@ async def multi_scenario_test():
                     "success": False,
                     "duration_ms": 0,  # Set to 0 for failed tests
                     "error": str(e),
-                    "category": scenario.get("category", "unknown")
+                    "category": scenario.get("category", "unknown"),
+                    "response_data": None
                 })
         
         # Summary results
@@ -823,37 +826,43 @@ async def main():
         
         # 测试用例的映射信息（从指南获取）
         test_guide_info = {
-            "Test_1": {
-                "name": "Solution initialization",
-                "description": "Solution initialization",
-                "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials"
-            },
-            "Test_2": {
-                "name": "API connectivity verification", 
-                "description": "Verification of API connectivity and WebSocket establishment",
-                "expected_result": "- WebSocket connection established successfully\n- API endpoints accessible\n- Authentication working properly"
-            },
-            "Test_3": {
-                "name": "Service status check",
-                "description": "Check if elevator service is operational",
-                "expected_result": "- Service status check successful\n- System operational status confirmed"
-            },
-            "Test_4": {
-                "name": "Building configuration validation",
-                "description": "Validate building configuration retrieval",
-                "expected_result": "- Building configuration retrieved successfully\n- Configuration data complete and valid"
-            },
-            "Test_5": {
-                "name": "WebSocket handshake verification",
-                "description": "Verify WebSocket handshake process",
-                "expected_result": "- WebSocket handshake completed successfully\n- Connection stable and ready for communication"
-            },
-            "Test_6": {
-                "name": "Basic destination call",
-                "description": "Call: Basic call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested"
-            }
-            # 可以继续添加其他测试用例的映射...
+            "Test_1": {"name": "Solution initialization", "description": "Solution initialization", "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials", "category": "Initialization"},
+            "Test_2": {"name": "API connectivity verification", "description": "Verification of API connectivity and WebSocket establishment", "expected_result": "- WebSocket connection established successfully\n- API endpoints accessible\n- Authentication working properly", "category": "Connectivity"},
+            "Test_3": {"name": "Service status check", "description": "Check if elevator service is operational", "expected_result": "- Service status check successful\n- System operational status confirmed", "category": "Service Status"},
+            "Test_4": {"name": "Building configuration validation", "description": "Validate building configuration retrieval", "expected_result": "- Building configuration retrieved successfully\n- Configuration data complete and valid", "category": "Configuration"},
+            "Test_5": {"name": "WebSocket handshake verification", "description": "Verify WebSocket handshake process", "expected_result": "- WebSocket handshake completed successfully\n- Connection stable and ready for communication", "category": "Connectivity"},
+            "Test_6": {"name": "Basic destination call", "description": "Call: Basic call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only", "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested", "category": "Elevator Call"},
+            "Test_7": {"name": "Multi-floor call", "description": "Call: Multi-floor destination", "expected_result": "- Call accepted for multiple floors\n- Elevator moves to all requested floors in order\n- Response code 201", "category": "Elevator Call"},
+            "Test_8": {"name": "Delayed call", "description": "Call: Delayed destination call", "expected_result": "- Call accepted with delay\n- Elevator arrives after specified delay\n- Response code 201", "category": "Elevator Call"},
+            "Test_9": {"name": "Call cancellation", "description": "Cancel an active elevator call", "expected_result": "- Call cancelled successfully\n- Elevator stops or changes route\n- Response code 200", "category": "Call Management"},
+            "Test_10": {"name": "Concurrent calls", "description": "Multiple calls at the same time", "expected_result": "- All calls accepted\n- Elevator handles concurrent requests\n- Response code 201", "category": "Call Management"},
+            "Test_11": {"name": "Real-time status monitoring", "description": "Monitor elevator status in real time", "expected_result": "- Status updates received\n- Elevator position and state reported\n- Response code 200", "category": "Status Monitoring"},
+            "Test_12": {"name": "Elevator position tracking", "description": "Track elevator position", "expected_result": "- Elevator position tracked accurately\n- Response code 200", "category": "Status Monitoring"},
+            "Test_13": {"name": "Group status query", "description": "Query status of elevator group", "expected_result": "- Group status returned\n- Response code 200", "category": "Status Monitoring"},
+            "Test_14": {"name": "Load status monitoring", "description": "Monitor elevator load status", "expected_result": "- Load status reported\n- Response code 200", "category": "Status Monitoring"},
+            "Test_15": {"name": "Movement direction detection", "description": "Detect elevator movement direction", "expected_result": "- Movement direction detected\n- Response code 200", "category": "Status Monitoring"},
+            "Test_16": {"name": "Invalid floor handling", "description": "Handle invalid floor call", "expected_result": "- Error reported for invalid floor\n- Response code 400 or appropriate error code", "category": "Error Handling"},
+            "Test_17": {"name": "Same floor error", "description": "Handle call to same floor", "expected_result": "- Error reported for same floor call\n- Response code 400 or appropriate error code", "category": "Error Handling"},
+            "Test_18": {"name": "Excessive delay error", "description": "Handle excessive delay in call", "expected_result": "- Error reported for excessive delay\n- Response code 400 or appropriate error code", "category": "Error Handling"},
+            "Test_19": {"name": "Invalid building ID", "description": "Handle invalid building ID in call", "expected_result": "- Error reported for invalid building ID\n- Response code 400 or appropriate error code", "category": "Error Handling"},
+            "Test_20": {"name": "Missing parameters error", "description": "Handle missing parameters in call", "expected_result": "- Error reported for missing parameters\n- Response code 400 or appropriate error code", "category": "Error Handling"},
+            "Test_21": {"name": "Response time test", "description": "Test elevator API response time", "expected_result": "- Response time within acceptable limits\n- Response code 200", "category": "Performance"},
+            "Test_22": {"name": "Load performance test", "description": "Test elevator under load", "expected_result": "- Elevator handles load\n- Response code 201", "category": "Performance"},
+            "Test_23": {"name": "Multi-user concurrency", "description": "Test multi-user concurrent calls", "expected_result": "- All user calls accepted\n- Elevator handles concurrency\n- Response code 201", "category": "Performance"},
+            "Test_24": {"name": "Peak load handling", "description": "Test elevator at peak load", "expected_result": "- Elevator handles peak load\n- Response code 201", "category": "Performance"},
+            "Test_25": {"name": "Continuous call handling", "description": "Test continuous calls to elevator", "expected_result": "- Elevator handles continuous calls\n- Response code 201", "category": "Performance"},
+            "Test_26": {"name": "Long-term connection stability", "description": "Test long-term WebSocket connection stability", "expected_result": "- Connection remains stable over time\n- No disconnects\n- Response code 200", "category": "Performance"},
+            "Test_27": {"name": "High-frequency call handling", "description": "Test elevator with high-frequency calls", "expected_result": "- Elevator handles high-frequency calls\n- Response code 201", "category": "Performance"},
+            "Test_28": {"name": "Complex path planning", "description": "Test elevator complex path planning", "expected_result": "- Elevator follows complex path as requested\n- Response code 201", "category": "Performance"},
+            "Test_29": {"name": "Multi-stop handling", "description": "Test elevator multi-stop calls", "expected_result": "- Elevator stops at all requested floors\n- Response code 201", "category": "Performance"},
+            "Test_30": {"name": "Rapid response test", "description": "Test elevator rapid response capability", "expected_result": "- Elevator responds rapidly\n- Response code 200", "category": "Performance"},
+            "Test_31": {"name": "System recovery capability", "description": "Test elevator system recovery", "expected_result": "- System recovers from errors\n- Response code 200", "category": "Recovery"},
+            "Test_32": {"name": "Error recovery test", "description": "Test elevator error recovery", "expected_result": "- Elevator recovers from errors\n- Response code 200", "category": "Recovery"},
+            "Test_33": {"name": "Resource utilization", "description": "Test elevator resource utilization", "expected_result": "- Resource usage reported\n- Response code 200", "category": "Resource"},
+            "Test_34": {"name": "Service availability", "description": "Test elevator service availability", "expected_result": "- Service available\n- Response code 200", "category": "Availability"},
+            "Test_35": {"name": "Data consistency", "description": "Test elevator data consistency", "expected_result": "- Data consistent across system\n- Response code 200", "category": "Consistency"},
+            "Test_36": {"name": "Integration test", "description": "End-to-end integration test", "expected_result": "- All system components work together\n- Response code 201", "category": "Integration"},
+            "Test_37": {"name": "End-to-end validation", "description": "End-to-end system validation", "expected_result": "- System validated end-to-end\n- Response code 201", "category": "Integration"}
         }
         
         for result in test_results:
@@ -865,6 +874,7 @@ async def main():
             description = guide_info.get("description", result["scenario"])
             expected_result = guide_info.get("expected_result", "Test should execute successfully and return expected results")
             
+            category = guide_info.get("category", result.get("category", "unknown"))
             test_result = TestResult(
                 test_id=result["test_id"],
                 name=test_name,
@@ -875,7 +885,7 @@ async def main():
                 duration_ms=result.get("duration_ms", 0),
                 error_message=result.get("error", None),
                 response_data=result.get("response_data", None),
-                category=result.get("category", "elevator_call")
+                category=category
             )
             report_test_results.append(test_result)
         
@@ -889,22 +899,22 @@ async def main():
             "test_environment": "WebSocket",
             "tester": "testall.py",
             "version": "2.0.0",
-            # 从指南要求的额外字段
+            # Additional fields required by the guide
             "setup": "Get access to the equipment for testing:\n- Virtual equipment, available in KONE API portal\n- Preproduction equipment, by contacting KONE API Support (api-support@kone.com)",
             "pre_test_setup": "- Test environments available for the correct KONE API organization.\n- Building id can be retrieved (/resource endpoint).",
             "date": datetime.now().strftime("%d.%m.%Y"),
             "solution_provider": "IBC-AI CO.",
-            "company_address": "待填写",
-            "contact_person": "待填写", 
-            "contact_email": "待填写",
-            "contact_phone": "待填写",
-            "tester": "自动化测试系统",
+            "company_address": "To be filled",
+            "contact_person": "To be filled", 
+            "contact_email": "To be filled",
+            "contact_phone": "To be filled",
+            "tester": "Automated Test System",
             "tested_system": "KONE Elevator Control Service",
-            "system_version": "待填写",
+            "system_version": "To be filled",
             "software_name": "KONE SR-API Test Suite",
             "software_version": "2.0.0",
             "kone_sr_api_version": "v2.0",
-            "kone_assistant_email": "待填写"
+            "kone_assistant_email": "To be filled"
         }
         
         # Generate report
