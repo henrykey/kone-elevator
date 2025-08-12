@@ -32,3 +32,4 @@ test_floor_*.py
 test_multiple_*.py
 test_source_*.py
 diagnose_*.py
+.DS_Store

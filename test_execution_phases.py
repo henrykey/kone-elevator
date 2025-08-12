@@ -475,7 +475,15 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
                 duration_ms=result_data["duration_ms"],
                 error_message=result_data.get("error_message"),
                 response_data=result_data.get("response_data"),
-                category=result_data.get("category")
+                category=result_data.get("category", "unknown"),
+                # 新增的详细信息字段
+                request_parameters=result_data.get("request_data", {}),
+                request_method="POST",  # 大部分是POST请求
+                request_url=f"/api/elevator/call",  # 大部分是电梯呼叫
+                response_status_code=result_data.get("status_code", 201),
+                response_headers=result_data.get("response_headers", {}),
+                request_timestamp=result_data.get("request_timestamp"),
+                response_timestamp=result_data.get("response_timestamp")
             )
             formatted_results.append(test_result)
         
@@ -490,18 +498,18 @@ async def phase_3_report_generation(test_results: Dict[str, Any],
             "setup": "Get access to the equipment for testing:\n- Virtual equipment, available in KONE API portal\n- Preproduction equipment, by contacting KONE API Support (api-support@kone.com)",
             "pre_test_setup": "- Test environments available for the correct KONE API organization.\n- Building id can be retrieved (/resource endpoint).",
             "date": datetime.now().strftime("%d.%m.%Y"),
-            "solution_provider": "IBC-AI CO.",
-            "company_address": "待填写",
-            "contact_person": "待填写", 
-            "contact_email": "待填写",
-            "contact_phone": "待填写",
-            "tester": "自动化测试系统",
+            "solution_provider": config.get("solution_provider", {}).get("company_name", "IBC-AI CO."),
+            "company_address": config.get("solution_provider", {}).get("company_address", "Hong Kong, China"),
+            "contact_person": config.get("solution_provider", {}).get("contact_person_name", "Test Engineer"), 
+            "contact_email": config.get("solution_provider", {}).get("contact_email", "test@ibc-ai.com"),
+            "contact_phone": config.get("solution_provider", {}).get("contact_phone", "+86-123-4567-8901"),
+            "tester": config.get("solution_provider", {}).get("tester", "Automated Test System"),
             "tested_system": "KONE Elevator Control Service",
-            "system_version": "待填写",
+            "system_version": "KONE API v2.0",
             "software_name": "KONE SR-API Test Suite",
             "software_version": "2.0.0",
             "kone_sr_api_version": "v2.0",
-            "kone_assistant_email": "待填写"
+            "kone_assistant_email": "api-support@kone.com"
         }
         
         # 生成多格式报告

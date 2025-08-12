@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TestResult:
-    """测试结果数据结构 - 符合KONE测试指南格式"""
+    """测试结果数据结构 - 符合KONE测试指南格式，增强版包含详细请求响应信息"""
     test_id: str  # Test编号 (如 "Test 1", "Test 2")
     name: str  # Test名称
     description: str  # Description描述
@@ -42,6 +42,15 @@ class TestResult:
     error_message: Optional[str] = None
     response_data: Optional[Dict] = None
     category: Optional[str] = None
+    
+    # 新增的详细信息字段
+    request_parameters: Optional[Dict] = None  # 发送的请求参数
+    request_method: Optional[str] = None       # HTTP方法
+    request_url: Optional[str] = None          # 请求URL
+    response_status_code: Optional[int] = None # HTTP状态码
+    response_headers: Optional[Dict] = None    # 响应头
+    request_timestamp: Optional[str] = None    # 请求时间戳
+    response_timestamp: Optional[str] = None   # 响应时间戳
 
 
 class ReportGenerator:
@@ -447,6 +456,48 @@ Ensuring the quality and security of a solution is every developer's responsibil
             
             report += f"| {result.test_id} | {result.description} | {expected_formatted} | {test_result_formatted} |\n"
         
+        
+        # 添加详细测试信息部分
+        report += "\n---\n\n## Detailed Test Information\n\n"
+        
+        for result in sorted_results:
+            report += f"### {result.test_id}: {result.name}\n"
+            report += f"**Status:** {'✅ PASS' if result.status == 'PASS' else '❌ FAIL' if result.status == 'FAIL' else '⚠️ ERROR'}  \n"
+            report += f"**Duration:** {result.duration_ms:.2f} ms\n"
+            report += f"**Category:** {result.category or 'N/A'}\n\n"
+            
+            # 添加请求详情
+            if hasattr(result, 'request_parameters') and result.request_parameters:
+                report += "#### Request Details\n"
+                if hasattr(result, 'request_method') and result.request_method:
+                    report += f"- **Method:** {result.request_method}\n"
+                if hasattr(result, 'request_url') and result.request_url:
+                    report += f"- **URL:** `{result.request_url}`\n"
+                if hasattr(result, 'request_timestamp') and result.request_timestamp:
+                    report += f"- **Timestamp:** {result.request_timestamp}\n"
+                report += "- **Parameters:**\n"
+                import json
+                report += "```json\n"
+                report += json.dumps(result.request_parameters, indent=2, ensure_ascii=False)
+                report += "\n```\n\n"
+            
+            # 添加响应详情
+            if hasattr(result, 'response_data') and result.response_data:
+                report += "#### Response Details\n"
+                if hasattr(result, 'response_status_code') and result.response_status_code:
+                    report += f"- **Status Code:** {result.response_status_code}\n"
+                if hasattr(result, 'response_timestamp') and result.response_timestamp:
+                    report += f"- **Response Time:** {result.response_timestamp}\n"
+                report += "- **Response Data:**\n"
+                report += "```json\n"
+                report += json.dumps(result.response_data, indent=2, ensure_ascii=False)
+                report += "\n```\n\n"
+            
+            # 添加错误信息（如果有）
+            if hasattr(result, 'error_message') and result.error_message:
+                report += "#### Error Information\n"
+                report += f"```\n{result.error_message}\n```\n\n"
+                
         # 添加建议
         report += "\n---\n\n## Test Analysis and Recommendations\n\n"
         
