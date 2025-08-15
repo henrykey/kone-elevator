@@ -243,6 +243,39 @@ class CommonAPIClient:
         else:
             raise ValueError(f"Unsupported call_type: {call_type}")
     
+    async def send_request_and_wait_response(
+        self, 
+        payload: Dict[str, Any], 
+        timeout: float = 30.0
+    ) -> Optional[Dict[str, Any]]:
+        """
+        发送任意请求并等待响应
+        
+        Args:
+            payload: 请求载荷
+            timeout: 超时时间(秒)
+            
+        Returns:
+            Optional[Dict[str, Any]]: 响应数据，如果超时或出错返回 None
+        """
+        try:
+            self.logger.debug(f"Sending request: {json.dumps(payload, indent=2)}")
+            await self.websocket.send(json.dumps(payload))
+            
+            # 等待响应
+            response_raw = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
+            response_data = json.loads(response_raw)
+            
+            self.logger.debug(f"Received response: {json.dumps(response_data, indent=2)}")
+            return response_data
+            
+        except asyncio.TimeoutError:
+            self.logger.error(f"Request timeout after {timeout}s")
+            return None
+        except Exception as e:
+            self.logger.error(f"Request failed: {e}")
+            return None
+    
     async def _ping(self, building_id: str, group_id: str, payload: Dict[str, Any]) -> APIResponse:
         """
         Ping API 调用

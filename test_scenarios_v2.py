@@ -23,6 +23,7 @@ from typing import Dict, Any, List, Optional
 # 导入测试类
 from tests.categories.A_configuration_basic import ConfigurationBasicTests
 # from tests.categories.B_monitoring_events import MonitoringEventsTests  # 暂时禁用损坏的文件
+from tests.categories.C_elevator_calls import ElevatorCallsTests
 from reporting.formatter import TestReportFormatter, EnhancedTestResult
 from kone_api_client import CommonAPIClient, MonitoringAPIClient
 
@@ -208,6 +209,48 @@ class TestScenariosV2:
         
         return results
     
+    async def run_category_c_tests(self, building_id: str, group_id: str = "1") -> List[EnhancedTestResult]:
+        """
+        运行 Category C 测试 (电梯呼叫与控制)
+        
+        Args:
+            building_id: 建筑ID
+            group_id: 组ID
+            
+        Returns:
+            List[EnhancedTestResult]: 测试结果
+        """
+        self.logger.info("🛗 Starting Category C: 电梯呼叫与控制 Tests")
+        
+        # 获取访问令牌
+        access_token = self._get_access_token()
+        
+        # 创建 WebSocket 连接
+        websocket = await self._create_websocket_connection(access_token)
+        
+        try:
+            # 创建 API 客户端
+            client = CommonAPIClient(websocket)
+            client.building_id = building_id  # 设置建筑ID
+            
+            # 运行 Category C 测试
+            test_runner = ElevatorCallsTests(client)
+            results = await test_runner.run_all_tests()
+            
+            self.all_test_results.extend(results)
+            
+            # 输出 Category C 摘要
+            passed_count = sum(1 for r in results if r.status == "PASS")
+            total_count = len(results)
+            
+            self.logger.info(f"📊 Category C Summary: {passed_count}/{total_count} tests passed")
+            
+            return results
+            
+        finally:
+            # 关闭连接
+            await websocket.close()
+    
     async def _run_simple_monitoring_tests(self, monitoring_client, building_id: str, group_id: str) -> List[EnhancedTestResult]:
         """简化的监控测试"""
         from reporting.formatter import EnhancedTestResult
@@ -367,7 +410,7 @@ class TestScenariosV2:
             building_ids = ["building:L1QinntdEOg"]  # 恢复默认测试建筑
         
         if categories is None:
-            categories = ["A", "B"]  # Phase 2 运行 Category A & B
+            categories = ["A", "B", "C"]  # Phase 3 运行 Category A, B & C
         
         try:
             # 获取访问令牌
@@ -396,9 +439,12 @@ class TestScenariosV2:
                             config_manager = BuildingConfigManager()
                         await self.run_category_b_tests(websocket, building_id, config_manager, group_id)
                     
-                    # TODO: Phase 3+ 将添加其他分类
-                    # if "C" in categories:
-                    #     await self.run_category_c_tests(websocket, building_id)
+                    if "C" in categories:
+                        await self.run_category_c_tests(building_id, group_id)
+                    
+                    # TODO: Phase 4+ 将添加其他分类
+                    # if "D" in categories:
+                    #     await self.run_category_d_tests(websocket, building_id)
                     # ...
             finally:
                 await websocket.close()
