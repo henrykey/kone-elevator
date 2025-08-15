@@ -24,6 +24,7 @@ from typing import Dict, Any, List, Optional
 from tests.categories.A_configuration_basic import ConfigurationBasicTests
 # from tests.categories.B_monitoring_events import MonitoringEventsTests  # 暂时禁用损坏的文件
 from tests.categories.C_elevator_calls import ElevatorCallsTests
+from tests.categories.D_elevator_status import ElevatorStatusTests
 from reporting.formatter import TestReportFormatter, EnhancedTestResult
 from kone_api_client import CommonAPIClient, MonitoringAPIClient
 
@@ -251,6 +252,37 @@ class TestScenariosV2:
             # 关闭连接
             await websocket.close()
     
+    async def run_category_d_tests(self, websocket, building_id: str, group_id: str = "1") -> List[EnhancedTestResult]:
+        """
+        运行 Category D 测试 (电梯状态查询与实时更新)
+        
+        Args:
+            websocket: WebSocket 连接
+            building_id: 建筑ID
+            group_id: 组ID
+            
+        Returns:
+            List[EnhancedTestResult]: 测试结果
+        """
+        self.logger.info("📊 Starting Category D: 电梯状态查询与实时更新 Tests")
+        
+        test_runner = ElevatorStatusTests(websocket, building_id, group_id)
+        results = await test_runner.run_all_tests()
+        
+        self.all_test_results.extend(results)
+        
+        # 输出 Category D 摘要
+        passed_count = sum(1 for r in results if r.status == "PASS")
+        total_count = len(results)
+        
+        self.logger.info(f"📊 Category D Summary: {passed_count}/{total_count} tests passed")
+        
+        # 统计事件
+        total_events = sum(len(r.monitoring_events or []) for r in results)
+        self.logger.info(f"📈 Status Events Summary: {total_events} total events collected")
+        
+        return results
+    
     async def _run_simple_monitoring_tests(self, monitoring_client, building_id: str, group_id: str) -> List[EnhancedTestResult]:
         """简化的监控测试"""
         from reporting.formatter import EnhancedTestResult
@@ -410,7 +442,7 @@ class TestScenariosV2:
             building_ids = ["building:L1QinntdEOg"]  # 恢复默认测试建筑
         
         if categories is None:
-            categories = ["A", "B", "C"]  # Phase 3 运行 Category A, B & C
+            categories = ["A", "B", "C", "D"]  # Phase 4 运行 Category A, B, C & D
         
         try:
             # 获取访问令牌
@@ -442,9 +474,12 @@ class TestScenariosV2:
                     if "C" in categories:
                         await self.run_category_c_tests(building_id, group_id)
                     
-                    # TODO: Phase 4+ 将添加其他分类
-                    # if "D" in categories:
-                    #     await self.run_category_d_tests(websocket, building_id)
+                    if "D" in categories:
+                        await self.run_category_d_tests(websocket, building_id, group_id)
+                    
+                    # TODO: Phase 5+ 将添加其他分类
+                    # if "E" in categories:
+                    #     await self.run_category_e_tests(websocket, building_id)
                     # ...
             finally:
                 await websocket.close()
