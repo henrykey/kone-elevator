@@ -1,6 +1,11 @@
 """
 Category F: 错误处理与异常场景 (Test 16-20)
 覆盖KONE API v2.0的错误处理和异常情况验证测试
+
+PATCH v2.0 Enhancement:
+- Test 16-20: 增加 cancel reason 精确匹配功能
+- 错误响应增加 cancel_reason 字段验证
+- 支持精确的错误原因分类和匹配
 """
 
 import asyncio
@@ -18,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class ErrorHandlingTests:
-    """Category F: 错误处理与异常场景测试类"""
+    """Category F: 错误处理与异常场景测试类 (Enhanced with Cancel Reason Matching)"""
     
     def __init__(self, websocket, building_id: str = "building:L1QinntdEOg", group_id: str = "1"):
         self.websocket = websocket
@@ -26,6 +31,74 @@ class ErrorHandlingTests:
         self.group_id = group_id
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.test_mapper = TestCaseMapper(building_id)
+        
+        # PATCH v2.0: Cancel Reason 映射表
+        self.cancel_reason_mapping = {
+            "InvalidArea": ["INVALID_FLOOR", "AREA_NOT_FOUND", "INVALID_DESTINATION"],
+            "SameSourceDestination": ["SAME_FLOOR", "NO_MOVEMENT_REQUIRED", "IDENTICAL_AREAS"], 
+            "ExcessiveDelay": ["DELAY_TOO_LONG", "TIMEOUT_EXCEEDED", "DELAY_OUT_OF_RANGE"],
+            "InvalidBuildingId": ["BUILDING_NOT_FOUND", "INVALID_BUILDING", "UNAUTHORIZED_BUILDING"],
+            "MissingParameter": ["REQUIRED_FIELD_MISSING", "INCOMPLETE_REQUEST", "MANDATORY_PARAMETER_ABSENT"],
+            # 添加方法名映射
+            "InvalidFloorCall": ["INVALID_FLOOR", "AREA_NOT_FOUND", "INVALID_DESTINATION"],
+            "ExcessiveDelayParameter": ["DELAY_TOO_LONG", "TIMEOUT_EXCEEDED", "DELAY_OUT_OF_RANGE"],
+            "MissingRequiredParameters": ["REQUIRED_FIELD_MISSING", "INCOMPLETE_REQUEST", "MANDATORY_PARAMETER_ABSENT"]
+        }
+    
+    def _validate_cancel_reason_patch(self, response: Dict[str, Any], expected_category: str) -> Dict[str, Any]:
+        """
+        PATCH v2.0: 验证 cancel reason 精确匹配
+        
+        Args:
+            response: API 响应
+            expected_category: 期望的错误类别
+            
+        Returns:
+            验证结果字典
+        """
+        validation_result = {
+            "cancel_reason_match": False,
+            "expected_reasons": self.cancel_reason_mapping.get(expected_category, []),
+            "actual_reason": None,
+            "precise_match": False,
+            "category_match": False
+        }
+        
+        # 检查响应中的 cancel_reason 字段
+        if isinstance(response, dict):
+            # 支持多种 cancel_reason 字段位置
+            cancel_reason = response.get("cancel_reason") or response.get("cancelReason") or response.get("error_reason")
+            
+            if not cancel_reason and "data" in response:
+                data = response["data"]
+                if isinstance(data, dict):
+                    cancel_reason = data.get("cancel_reason") or data.get("cancelReason") or data.get("reason")
+            
+            if not cancel_reason and "error" in response:
+                error_info = response["error"]
+                if isinstance(error_info, dict):
+                    cancel_reason = error_info.get("reason") or error_info.get("cancel_reason")
+                elif isinstance(error_info, str):
+                    cancel_reason = error_info
+            
+            validation_result["actual_reason"] = cancel_reason
+            
+            if cancel_reason:
+                expected_reasons = validation_result["expected_reasons"]
+                
+                # 精确匹配检查
+                if cancel_reason in expected_reasons:
+                    validation_result["precise_match"] = True
+                    validation_result["cancel_reason_match"] = True
+                
+                # 类别匹配检查（部分匹配）
+                for expected in expected_reasons:
+                    if expected.lower() in cancel_reason.lower() or cancel_reason.lower() in expected.lower():
+                        validation_result["category_match"] = True
+                        validation_result["cancel_reason_match"] = True
+                        break
+        
+        return validation_result
         
     async def _create_lift_call_client(self) -> LiftCallAPIClient:
         """创建带有建筑配置的电梯呼叫客户端"""
@@ -143,25 +216,51 @@ class ErrorHandlingTests:
                     # 检查是否正确返回错误
                     if not response.success:
                         validations.append(f"✅ {scenario['name']}: 正确拒绝无效请求")
+                        
+                        # PATCH v2.0: 验证 cancel reason 精确匹配
+                        cancel_reason_validation = self._validate_cancel_reason_patch(
+                            response.__dict__, scenario["expected_error"]
+                        )
+                        
+                        if cancel_reason_validation["cancel_reason_match"]:
+                            validations.append(f"✅ {scenario['name']}: Cancel reason 匹配成功 - {cancel_reason_validation['actual_reason']}")
+                        else:
+                            validations.append(f"⚠️ {scenario['name']}: Cancel reason 不匹配 - 期望 {cancel_reason_validation['expected_reasons']}, 实际 {cancel_reason_validation['actual_reason']}")
+                        
                         error_scenarios.append({
                             "scenario": scenario["name"],
                             "status": "rejected",
-                            "error": response.error
+                            "error": response.error,
+                            "cancel_reason_validation": cancel_reason_validation  # PATCH v2.0
                         })
                     else:
                         validations.append(f"❌ {scenario['name']}: 应该拒绝但被接受了")
                         error_scenarios.append({
                             "scenario": scenario["name"],
                             "status": "accepted",
-                            "error": "Should have been rejected"
+                            "error": "Should have been rejected",
+                            "cancel_reason_validation": {"cancel_reason_match": False, "actual_reason": None}  # PATCH v2.0
                         })
                         
                 except Exception as e:
                     validations.append(f"✅ {scenario['name']}: 正确抛出异常 - {str(e)[:50]}")
+                    
+                    # PATCH v2.0: 验证异常中的 cancel reason
+                    exception_dict = {"error": str(e)}
+                    cancel_reason_validation = self._validate_cancel_reason_patch(
+                        exception_dict, scenario["expected_error"]
+                    )
+                    
+                    if cancel_reason_validation["cancel_reason_match"]:
+                        validations.append(f"✅ {scenario['name']}: 异常中 Cancel reason 匹配成功")
+                    else:
+                        validations.append(f"⚠️ {scenario['name']}: 异常中 Cancel reason 不明确")
+                    
                     error_scenarios.append({
                         "scenario": scenario["name"],
                         "status": "exception",
-                        "error": str(e)
+                        "error": str(e),
+                        "cancel_reason_validation": cancel_reason_validation  # PATCH v2.0
                     })
             
             # 场景4: 验证正常呼叫仍然工作
@@ -182,6 +281,14 @@ class ErrorHandlingTests:
             except Exception as e:
                 validations.append(f"⚠️ 正常呼叫出现异常: {e}")
             
+            # PATCH v2.0: 统计 cancel reason 匹配情况
+            cancel_reason_stats = {
+                "total_scenarios": len(error_scenarios),
+                "matched_cancel_reasons": len([s for s in error_scenarios if s.get("cancel_reason_validation", {}).get("cancel_reason_match", False)]),
+                "unmatched_cancel_reasons": len([s for s in error_scenarios if not s.get("cancel_reason_validation", {}).get("cancel_reason_match", False)])
+            }
+            cancel_reason_stats["match_rate"] = (cancel_reason_stats["matched_cancel_reasons"] / cancel_reason_stats["total_scenarios"]) * 100 if cancel_reason_stats["total_scenarios"] > 0 else 0
+            
             # 判断测试结果
             failed_validations = [v for v in validations if v.startswith("❌")]
             warning_validations = [v for v in validations if v.startswith("⚠️")]
@@ -195,7 +302,7 @@ class ErrorHandlingTests:
             
             return EnhancedTestResult(
                 test_id="Test 16",
-                test_name="无效楼层呼叫 (invalid-floor-call)",
+                test_name="无效楼层呼叫 (invalid-floor-call) - Enhanced with Cancel Reason Matching",
                 category="F_error_handling",
                 status=status,
                 duration_ms=(time.time() - start_time) * 1000,
@@ -207,7 +314,8 @@ class ErrorHandlingTests:
                 error_details={
                     "tested_scenarios": len(invalid_scenarios),
                     "error_scenarios": error_scenarios,
-                    "validation_summary": validations
+                    "validation_summary": validations,
+                    "cancel_reason_patch_stats": cancel_reason_stats  # PATCH v2.0
                 }
             )
             
@@ -266,6 +374,17 @@ class ErrorHandlingTests:
                     
                     if not response.success:
                         validations.append(f"✅ {scenario['name']}: 正确拒绝相同楼层呼叫")
+                        
+                        # PATCH v2.0: 验证 cancel reason 精确匹配
+                        cancel_reason_validation = self._validate_cancel_reason_patch(
+                            response.__dict__, "SameSourceDestination"
+                        )
+                        
+                        if cancel_reason_validation["cancel_reason_match"]:
+                            validations.append(f"✅ {scenario['name']}: Cancel reason 匹配成功")
+                        else:
+                            validations.append(f"⚠️ {scenario['name']}: Cancel reason 不匹配")
+                        
                         if "same" in response.error.lower() or "identical" in response.error.lower():
                             validations.append(f"✅ {scenario['name']}: 错误消息准确")
                         else:
@@ -276,6 +395,12 @@ class ErrorHandlingTests:
                         
                 except Exception as e:
                     validations.append(f"✅ {scenario['name']}: 正确抛出异常")
+                    
+                    # PATCH v2.0: 验证异常中的 cancel reason
+                    exception_dict = {"error": str(e)}
+                    cancel_reason_validation = self._validate_cancel_reason_patch(
+                        exception_dict, "SameSourceDestination"
+                    )
             
             # 验证正常不同楼层呼叫仍然工作
             try:
@@ -300,7 +425,7 @@ class ErrorHandlingTests:
             
             return EnhancedTestResult(
                 test_id="Test 17",
-                test_name="相同起止楼层 (same-source-destination)",
+                test_name="相同起止楼层 (same-source-destination) - Enhanced with Cancel Reason Matching",
                 category="F_error_handling",
                 status=status,
                 duration_ms=(time.time() - start_time) * 1000,
