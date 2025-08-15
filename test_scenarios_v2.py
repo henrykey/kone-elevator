@@ -28,6 +28,7 @@ from tests.categories.D_elevator_status import ElevatorStatusTests
 from tests.categories.E_system_initialization import SystemInitializationTests
 from tests.categories.F_error_handling import ErrorHandlingTests
 from tests.categories.G_performance import PerformanceTestsG
+from tests.categories.G_integration_e2e import IntegrationE2ETestsG
 from reporting.formatter import TestReportFormatter, EnhancedTestResult
 from kone_api_client import CommonAPIClient, MonitoringAPIClient
 
@@ -342,7 +343,7 @@ class TestScenariosV2:
     
     async def run_category_g_tests(self, websocket, building_id: str, group_id: str = "1") -> List[EnhancedTestResult]:
         """
-        运行 Category G 测试 (性能测试与压力验证)
+        运行 Category G 测试 (包含性能测试 + Integration & E2E)
         
         Args:
             websocket: WebSocket 连接
@@ -352,20 +353,37 @@ class TestScenariosV2:
         Returns:
             List[EnhancedTestResult]: 测试结果
         """
-        self.logger.info("🚀 Starting Category G: 性能测试与压力验证 Tests")
+        self.logger.info("🚀 Starting Category G: 性能测试与Integration & E2E Tests")
         
-        test_runner = PerformanceTestsG(websocket, building_id, group_id)
-        results = await test_runner.run_all_tests()
+        all_results = []
         
-        self.all_test_results.extend(results)
+        # 运行性能测试 (Test 21-35)
+        self.logger.info("📊 执行性能测试部分 (Test 21-35)")
+        performance_runner = PerformanceTestsG(websocket, building_id, group_id)
+        performance_results = await performance_runner.run_all_tests()
+        all_results.extend(performance_results)
+        
+        # 运行Integration & E2E测试 (Test 36-37)
+        self.logger.info("🔗 执行Integration & E2E测试部分 (Test 36-37)")
+        integration_runner = IntegrationE2ETestsG(websocket, building_id, group_id)
+        integration_results = await integration_runner.run_all_tests()
+        all_results.extend(integration_results)
+        
+        self.all_test_results.extend(all_results)
         
         # 输出 Category G 摘要
-        passed_count = sum(1 for r in results if r.status == "PASS")
-        total_count = len(results)
+        passed_count = sum(1 for r in all_results if r.status == "PASS")
+        total_count = len(all_results)
         
-        self.logger.info(f"🚀 Category G Summary: {passed_count}/{total_count} tests passed")
+        # 分别统计性能测试和E2E测试
+        perf_passed = sum(1 for r in performance_results if r.status == "PASS")
+        e2e_passed = sum(1 for r in integration_results if r.status == "PASS")
         
-        return results
+        self.logger.info(f"📊 性能测试: {perf_passed}/{len(performance_results)} 通过")
+        self.logger.info(f"🔗 E2E测试: {e2e_passed}/{len(integration_results)} 通过")
+        self.logger.info(f"🚀 Category G Total: {passed_count}/{total_count} tests passed")
+        
+        return all_results
     
     async def _run_simple_monitoring_tests(self, monitoring_client, building_id: str, group_id: str) -> List[EnhancedTestResult]:
         """简化的监控测试"""
