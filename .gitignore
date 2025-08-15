@@ -1,5 +1,28 @@
+# Python
 .python-version
-__pycache__/*pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 Service Robot API solution validation test guide version 2.docx
 
 # 排除所有报告目录和生成的报告文件

@@ -1,0 +1,95 @@
+# KONE SR-API v2.0 验证测试报告
+
+## 测试概览
+
+- **执行时间**: {{ started_at }} - {{ completed_at }}
+- **总测试数**: {{ total_tests }}
+- **通过**: {{ passed_tests }} ({{ "%.1f"|format(success_rate) }}%)
+- **失败**: {{ failed_tests }}
+- **错误**: {{ error_tests }}
+- **跳过**: {{ skipped_tests }}
+- **总耗时**: {{ "%.2f"|format(total_duration_ms/1000) }}秒
+
+## 分类测试结果
+
+{% for category, suite in test_suites.items() %}
+### {{ category }}
+
+- **通过率**: {{ "%.1f"|format(suite.get_success_rate()) }}%
+- **耗时**: {{ "%.2f"|format(suite.total_duration_ms/1000) }}秒
+
+{% for test in suite.test_results %}
+#### Test {{ test.test_id }}: {{ test.test_name }}
+
+- **状态**: {% if test.status == "PASS" %}✅ PASS{% elif test.status == "FAIL" %}❌ FAIL{% elif test.status == "ERROR" %}🔥 ERROR{% else %}⏭️ SKIP{% endif %}
+- **API类型**: {{ test.api_type }}
+- **调用类型**: {{ test.call_type }}
+- **耗时**: {{ "%.0f"|format(test.duration_ms) }}ms
+- **建筑ID**: {{ test.building_id }}
+
+{% if test.request_details %}
+**请求详情**:
+```json
+{{ test.request_details | tojson(indent=2) }}
+```
+{% endif %}
+
+{% if test.response_data %}
+**响应详情**:
+- **状态码**: {{ test.status_code }}
+{% if test.session_id %}
+- **会话ID**: {{ test.session_id }}
+{% endif %}
+{% if test.allocation_mode %}
+- **分配模式**: {{ test.allocation_mode }}
+{% endif %}
+{% endif %}
+
+{% if test.monitoring_events %}
+**监控事件**: 收到 {{ test.monitoring_events|length }} 个事件
+{% endif %}
+
+{% if test.error_details %}
+**错误详情**:
+```
+{{ test.error_message }}
+```
+{% endif %}
+
+{% if test.compliance_check %}
+**合规性检查**:
+{% for check, result in test.compliance_check.items() %}
+- {{ check }}: {% if result %}✅{% else %}❌{% endif %}
+{% endfor %}
+{% endif %}
+
+---
+
+{% endfor %}
+{% endfor %}
+
+## 合规性总结
+
+本报告严格按照 `elevator-websocket-api-v2.yaml` 规范执行测试，确保：
+
+1. **请求格式合规**: 所有请求包含必需字段 (type, buildingId, groupId, callType, payload)
+2. **响应处理正确**: 正确解析状态码、会话ID、分配模式等字段
+3. **时间格式标准**: 使用 ISO-8601 UTC 时间格式
+4. **错误处理完善**: 映射标准错误码并提供详细错误信息
+
+## 建议事项
+
+{% if failed_tests > 0 or error_tests > 0 %}
+⚠️ **需要关注的问题**:
+{% for category, suite in test_suites.items() %}
+{% for test in suite.test_results %}
+{% if test.status in ["FAIL", "ERROR"] %}
+- {{ test.test_id }}: {{ test.error_message or "测试失败" }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+---
+*报告生成时间: {{ generated_at }}*  
+*Author: IBC-AI CO.*
