@@ -1,0 +1,81 @@
+{
+  "test_suite": "Category B Monitoring & Events (补丁加强版)",
+  "patch_description": "运营模式测试集成 (FRD/OSS/ATS/PRC 非运营模式拒绝 + 运营模式成功)",
+  "timestamp": "2025-08-15T17:58:05.634548",
+  "total_tests": 2,
+  "passed_tests": 0,
+  "failed_tests": 0,
+  "error_tests": 2,
+  "test_results": [
+    {
+      "test_id": "002",
+      "test_name": "Basic Lift Status Monitoring (Enhanced)",
+      "category": "B_monitoring_events",
+      "status": "ERROR",
+      "duration_ms": 562.8070831298828,
+      "api_type": "site-monitoring",
+      "call_type": "monitor",
+      "building_id": "building:L1QinntdEOg",
+      "group_id": "1",
+      "building_config": null,
+      "actions_config": null,
+      "monitoring_events": [],
+      "subscription_topics": [],
+      "response_data": null,
+      "session_id": null,
+      "allocation_mode": null,
+      "status_code": null,
+      "error_details": {
+        "exception": "'NoneType' object has no attribute 'subscribe_monitoring'"
+      },
+      "error_message": "Test execution failed: 'NoneType' object has no attribute 'subscribe_monitoring'",
+      "request_details": {},
+      "compliance_check": {
+        "request_executed": false
+      },
+      "ping_attempts": null,
+      "downtime_sec": null,
+      "recovery_timestamp": null,
+      "post_recovery_call": null,
+      "started_at": "2025-08-15T09:58:04.509843+00:00",
+      "completed_at": "2025-08-15T09:58:05.072650+00:00"
+    },
+    {
+      "test_id": "003",
+      "test_name": "Enhanced Status Monitoring (Multi-Lift Enhanced)",
+      "category": "B_monitoring_events",
+      "status": "ERROR",
+      "duration_ms": 561.194896697998,
+      "api_type": "site-monitoring",
+      "call_type": "monitor",
+      "building_id": "building:L1QinntdEOg",
+      "group_id": "1",
+      "building_config": null,
+      "actions_config": null,
+      "monitoring_events": [],
+      "subscription_topics": [
+        "lift_1/status",
+        "lift_2/status",
+        "lift_3/status"
+      ],
+      "response_data": null,
+      "session_id": null,
+      "allocation_mode": null,
+      "status_code": null,
+      "error_details": {
+        "exception": "'NoneType' object has no attribute 'subscribe_monitoring'"
+      },
+      "error_message": "Test execution failed: 'NoneType' object has no attribute 'subscribe_monitoring'",
+      "request_details": {},
+      "compliance_check": {
+        "request_executed": false
+      },
+      "ping_attempts": null,
+      "downtime_sec": null,
+      "recovery_timestamp": null,
+      "post_recovery_call": null,
+      "started_at": "2025-08-15T09:58:05.073108+00:00",
+      "completed_at": "2025-08-15T09:58:05.634302+00:00"
+    }
+  ]
+}
