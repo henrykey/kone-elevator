@@ -39,6 +39,7 @@ class ElevatorCallsTests:
             ("Test 6", "电梯呼叫参数验证", self.test_lift_call_parameters),
             ("Test 7", "电梯呼叫取消", self.test_lift_call_cancellation),
             ("Test 8", "电梯门控制", self.test_door_control),
+            ("Test 14", "特定电梯呼叫 (allowed-lifts)", self.test_specific_lift_call),
         ]
         
         for test_id, description, test_func in tests:
@@ -188,21 +189,89 @@ class ElevatorCallsTests:
     async def test_lift_call_parameters(self) -> EnhancedTestResult:
         """Test 6: 电梯呼叫参数验证
         
+        补丁加强: 增加 Option 1/2 分支验证
+        
         验证：
         1. group_size 参数
         2. delay 参数
         3. language 参数
         4. call_replacement_priority 参数
         5. allowed_lifts 参数
+        
+        Option 分支验证：
+        - Option 1: Basic parameter validation (group_size, delay, language)
+        - Option 2: Advanced parameter validation (call_replacement_priority, allowed_lifts)
         """
         start_time = time.time()
         
         try:
-            # 生成唯一的 request_id
+            # Option 1: Basic parameter validation
+            option1_result = await self._test_option1_parameters()
+            
+            # Option 2: Advanced parameter validation  
+            option2_result = await self._test_option2_parameters()
+            
+            # 综合验证结果
+            validations = []
+            validations.extend(option1_result["validations"])
+            validations.extend(option2_result["validations"])
+            
+            # 补丁加强：验证 Option 分支逻辑
+            if option1_result["success"] and option2_result["success"]:
+                validations.append("✅ Option 1/2 分支验证全部通过")
+            elif option1_result["success"]:
+                validations.append("✅ Option 1 分支验证通过，Option 2 部分通过")
+            elif option2_result["success"]:
+                validations.append("✅ Option 2 分支验证通过，Option 1 部分通过")
+            else:
+                validations.append("⚠️ Option 1/2 分支验证需要改进")
+            
+            # 测试参数边界情况
+            await self._test_parameter_boundaries(validations)
+            
+            failed_validations = [v for v in validations if v.startswith("❌")]
+            status = "FAIL" if failed_validations else "PASS"
+            
+            return EnhancedTestResult(
+                test_id="Test 6",
+                test_name="电梯呼叫参数验证 (Option 1/2 enhanced)",
+                category="C_elevator_calls",
+                status=status,
+                duration_ms=(time.time() - start_time) * 1000,
+                api_type="lift-call-api-v2",
+                call_type="action",
+                building_id=self.client.building_id,
+                group_id="1",
+                response_data={
+                    "option1_result": option1_result,
+                    "option2_result": option2_result
+                },
+                status_code=200,  # 综合状态
+                error_message="; ".join(failed_validations) if failed_validations else None
+            )
+            
+        except Exception as e:
+            self.logger.error(f"参数验证测试失败: {e}")
+            return EnhancedTestResult(
+                test_id="Test 6",
+                test_name="电梯呼叫参数验证 (Option 1/2 enhanced)",
+                category="C_elevator_calls",
+                status="ERROR",
+                duration_ms=(time.time() - start_time) * 1000,
+                api_type="lift-call-api-v2",
+                call_type="action",
+                building_id=getattr(self.client, 'building_id', ''),
+                group_id="1",
+                error_message=str(e)
+            )
+    
+    async def _test_option1_parameters(self) -> Dict[str, Any]:
+        """Option 1: Basic parameter validation"""
+        try:
             request_id = str(int(time.time() * 1000))
             
-            # 构造包含各种参数的 lift-call 请求
-            advanced_lift_call = {
+            # Option 1 参数：基础参数验证
+            option1_call = {
                 "type": "lift-call-api-v2",
                 "buildingId": self.client.building_id,
                 "callType": "action",
@@ -215,82 +284,111 @@ class ElevatorCallsTests:
                     "call": {
                         "action": 2,
                         "destination": 4000,
-                        "group_size": 3,  # 群组呼叫
-                        "delay": 5,  # 延迟 5 秒
-                        "language": "en-GB",  # 英文
-                        "call_replacement_priority": "HIGH"  # 高优先级
+                        "group_size": 3,       # Option 1 参数
+                        "delay": 5,            # Option 1 参数
+                        "language": "en-GB"    # Option 1 参数
                     }
                 }
             }
             
-            self.logger.info(f"发送高级参数电梯呼叫: {json.dumps(advanced_lift_call, indent=2)}")
+            self.logger.info(f"测试 Option 1 参数: {json.dumps(option1_call, indent=2)}")
             
-            # 发送请求
             response = await self.client.send_request_and_wait_response(
-                advanced_lift_call,
-                timeout=15.0
+                option1_call,
+                timeout=10.0
             )
             
             validations = []
+            success = False
             
-            if not response:
-                validations.append("❌ 未收到响应")
-            else:
-                self.logger.info(f"收到高级参数响应: {json.dumps(response, indent=2)}")
-                
-                # 验证状态码
+            if response:
                 if response.get("statusCode") == 201:
-                    validations.append("✅ 高级参数呼叫成功创建")
+                    validations.append("✅ Option 1: 基础参数呼叫成功")
+                    success = True
                 else:
-                    validations.append(f"❌ 状态码 {response.get('statusCode')} (期望 201)")
+                    validations.append(f"❌ Option 1: 状态码 {response.get('statusCode')} (期望 201)")
                 
-                # 验证 request_id
                 if response.get("requestId") == request_id:
-                    validations.append("✅ request_id 匹配")
+                    validations.append("✅ Option 1: request_id 匹配")
                 else:
-                    validations.append("❌ request_id 不匹配")
-                
-                # 验证系统接受了高级参数（没有参数验证错误）
-                if response.get("statusCode") != 400:
-                    validations.append("✅ 系统接受高级参数")
-                else:
-                    validations.append("❌ 参数验证失败")
+                    validations.append("❌ Option 1: request_id 不匹配")
+            else:
+                validations.append("❌ Option 1: 未收到响应")
             
-            # 测试参数边界情况
-            await self._test_parameter_boundaries(validations)
-            
-            failed_validations = [v for v in validations if v.startswith("❌")]
-            status = "FAIL" if failed_validations else "PASS"
-            
-            return EnhancedTestResult(
-                test_id="Test 6",
-                test_name="电梯呼叫参数验证",
-                category="C_elevator_calls",
-                status=status,
-                duration_ms=(time.time() - start_time) * 1000,
-                api_type="lift-call-api-v2",
-                call_type="action",
-                building_id=self.client.building_id,
-                group_id="1",
-                response_data=response,
-                status_code=response.get("statusCode") if response else None,
-                error_message="; ".join(failed_validations) if failed_validations else None
-            )
+            return {
+                "success": success,
+                "validations": validations,
+                "response": response
+            }
             
         except Exception as e:
-            self.logger.error(f"参数验证测试失败: {e}")
-            return EnhancedTestResult(
-                test_id="Test 6",
-                test_name="电梯呼叫参数验证",
-                category="C_elevator_calls",
-                status="ERROR",
-                duration_ms=(time.time() - start_time) * 1000,
-                api_type="lift-call-api-v2",
-                call_type="action",
-                building_id=getattr(self.client, 'building_id', ''),
-                group_id="1",
-                error_message=str(e)
+            return {
+                "success": False,
+                "validations": [f"❌ Option 1 测试异常: {e}"],
+                "response": None
+            }
+    
+    async def _test_option2_parameters(self) -> Dict[str, Any]:
+        """Option 2: Advanced parameter validation"""
+        try:
+            request_id = str(int(time.time() * 1000))
+            
+            # Option 2 参数：高级参数验证
+            option2_call = {
+                "type": "lift-call-api-v2",
+                "buildingId": self.client.building_id,
+                "callType": "action", 
+                "groupId": "1",
+                "payload": {
+                    "request_id": request_id,
+                    "area": 3000,
+                    "time": datetime.now(timezone.utc).isoformat(),
+                    "terminal": 1,
+                    "call": {
+                        "action": 2,
+                        "destination": 5000,
+                        "call_replacement_priority": "HIGH"  # Option 2 参数
+                    },
+                    "allowed_lifts": [1001010, 1001011]     # Option 2 参数
+                }
+            }
+            
+            self.logger.info(f"测试 Option 2 参数: {json.dumps(option2_call, indent=2)}")
+            
+            response = await self.client.send_request_and_wait_response(
+                option2_call,
+                timeout=10.0
             )
+            
+            validations = []
+            success = False
+            
+            if response:
+                if response.get("statusCode") == 201:
+                    validations.append("✅ Option 2: 高级参数呼叫成功")
+                    success = True
+                else:
+                    validations.append(f"❌ Option 2: 状态码 {response.get('statusCode')} (期望 201)")
+                
+                if response.get("requestId") == request_id:
+                    validations.append("✅ Option 2: request_id 匹配")
+                else:
+                    validations.append("❌ Option 2: request_id 不匹配")
+            else:
+                validations.append("❌ Option 2: 未收到响应")
+            
+            return {
+                "success": success,
+                "validations": validations,
+                "response": response
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "validations": [f"❌ Option 2 测试异常: {e}"],
+                "response": None
+            }
     
     async def _test_parameter_boundaries(self, validations: List[str]):
         """测试参数边界情况"""
@@ -589,3 +687,155 @@ class ElevatorCallsTests:
                 
         except Exception as e:
             validations.append(f"⚠️ 门控制边界测试异常: {e}")
+    
+    async def test_specific_lift_call(self) -> EnhancedTestResult:
+        """Test 14: 特定电梯呼叫 (allowed-lifts)
+        
+        补丁加强: 根据官方指南，验证 allowed-lifts 参数的使用
+        
+        验证：
+        1. 使用 allowed-lifts 参数指定特定电梯
+        2. 验证系统接受并处理该参数
+        3. 验证响应中的电梯分配符合限制
+        """
+        start_time = time.time()
+        
+        try:
+            request_id = str(int(time.time() * 1000))
+            
+            # 构造特定电梯呼叫请求（补丁加强）
+            specific_lift_call = {
+                "type": "lift-call-api-v2",
+                "buildingId": self.client.building_id,
+                "callType": "action",
+                "groupId": "1",
+                "payload": {
+                    "request_id": request_id,
+                    "area": 3000,
+                    "time": datetime.now(timezone.utc).isoformat(),
+                    "terminal": 1,
+                    "call": {
+                        "action": 2,
+                        "destination": 5000
+                    },
+                    "allowed_lifts": [1001010, 1001011]  # 补丁要求：指定允许的电梯
+                }
+            }
+            
+            self.logger.info(f"发送特定电梯呼叫请求: {json.dumps(specific_lift_call, indent=2)}")
+            
+            response = await self.client.send_request_and_wait_response(
+                specific_lift_call,
+                timeout=10.0
+            )
+            
+            validations = []
+            
+            if not response:
+                validations.append("❌ 未收到特定电梯呼叫响应")
+            else:
+                self.logger.info(f"收到特定电梯呼叫响应: {json.dumps(response, indent=2)}")
+                
+                # 验证响应状态码
+                if response.get("statusCode") == 201:
+                    validations.append("✅ 特定电梯呼叫成功创建")
+                else:
+                    validations.append(f"❌ 状态码 {response.get('statusCode')} (期望 201)")
+                
+                # 验证 request_id 匹配
+                if response.get("requestId") == request_id:
+                    validations.append("✅ request_id 匹配")
+                else:
+                    validations.append("❌ request_id 不匹配")
+                
+                # 验证系统接受了 allowed_lifts 参数
+                if response.get("statusCode") != 400:
+                    validations.append("✅ 系统接受 allowed-lifts 参数")
+                else:
+                    validations.append("❌ allowed-lifts 参数被拒绝")
+                
+                # 验证响应中的电梯分配（如果可用）
+                if "data" in response and "liftDeck" in response["data"]:
+                    assigned_lift = response["data"]["liftDeck"]
+                    allowed_lifts = specific_lift_call["payload"]["allowed_lifts"]
+                    
+                    if assigned_lift in allowed_lifts:
+                        validations.append(f"✅ 分配的电梯 {assigned_lift} 在允许列表中")
+                    else:
+                        validations.append(f"⚠️ 分配的电梯 {assigned_lift} 不在允许列表 {allowed_lifts} 中")
+                else:
+                    validations.append("ℹ️ 响应未包含电梯分配信息（正常，取决于API实现）")
+            
+            # 测试无效的 allowed_lifts 参数
+            await self._test_allowed_lifts_validation(validations)
+            
+            # 确定测试状态
+            failed_validations = [v for v in validations if v.startswith("❌")]
+            status = "FAIL" if failed_validations else "PASS"
+            
+            return EnhancedTestResult(
+                test_id="Test 14",
+                test_name="特定电梯呼叫 (allowed-lifts)",
+                category="C_elevator_calls",
+                status=status,
+                duration_ms=(time.time() - start_time) * 1000,
+                api_type="lift-call-api-v2",
+                call_type="action",
+                building_id=self.client.building_id,
+                group_id="1",
+                response_data=response,
+                status_code=response.get("statusCode") if response else None,
+                error_message="; ".join(failed_validations) if failed_validations else None
+            )
+            
+        except Exception as e:
+            self.logger.error(f"特定电梯呼叫测试失败: {e}")
+            return EnhancedTestResult(
+                test_id="Test 14",
+                test_name="特定电梯呼叫 (allowed-lifts)",
+                category="C_elevator_calls",
+                status="ERROR",
+                duration_ms=(time.time() - start_time) * 1000,
+                api_type="lift-call-api-v2",
+                call_type="action",
+                building_id=getattr(self.client, 'building_id', ''),
+                group_id="1",
+                error_message=str(e)
+            )
+    
+    async def _test_allowed_lifts_validation(self, validations: List[str]):
+        """测试 allowed_lifts 参数验证"""
+        try:
+            # 测试空的 allowed_lifts
+            request_id = str(int(time.time() * 1000))
+            
+            invalid_allowed_lifts_call = {
+                "type": "lift-call-api-v2",
+                "buildingId": self.client.building_id,
+                "callType": "action",
+                "groupId": "1",
+                "payload": {
+                    "request_id": request_id,
+                    "area": 3000,
+                    "time": datetime.now(timezone.utc).isoformat(),
+                    "terminal": 1,
+                    "call": {
+                        "action": 2,
+                        "destination": 5000
+                    },
+                    "allowed_lifts": []  # 空列表
+                }
+            }
+            
+            response = await self.client.send_request_and_wait_response(
+                invalid_allowed_lifts_call,
+                timeout=5.0
+            )
+            
+            if response and response.get("statusCode") == 400:
+                validations.append("✅ 系统正确拒绝空的 allowed-lifts")
+            else:
+                validations.append("⚠️ 系统接受空的 allowed-lifts（可能正常）")
+                
+        except Exception as e:
+            validations.append(f"⚠️ allowed-lifts 验证测试异常: {e}")
