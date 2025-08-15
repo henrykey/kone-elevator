@@ -1,0 +1,40 @@
+{
+  "test_suite": "Category F Complete System-Level Testing",
+  "timestamp": "2025-08-15T20:49:24.636723",
+  "patch_requirements": {
+    "target": "Test 38: 自定义综合测试场景 + 功能声明 8-10 实现说明",
+    "implementation": "系统级测试 + 日志记录 + 安全评估 + 连接性处理"
+  },
+  "total_tests": 1,
+  "passed_tests": 1,
+  "failed_tests": 0,
+  "error_tests": 0,
+  "overall_score": 100.0,
+  "function_declarations": {
+    "声明8": "日志记录与访问权限调用日志处理方法",
+    "声明9": "安全性自评表完成情况",
+    "声明10": "电梯内外的连接性处理方法"
+  },
+  "system_level_features": {
+    "access_logging": "完整的API访问日志记录和权限验证",
+    "security_assessment": "自动化安全性评估和合规检查",
+    "connectivity_management": "电梯连接性监控和故障处理",
+    "comprehensive_integration": "多阶段综合集成测试",
+    "appendix_generation": "自动生成功能声明附录"
+  },
+  "test_phases": {
+    "phase_1": "日志记录与访问权限验证",
+    "phase_2": "安全性自评估",
+    "phase_3": "电梯内外连接性处理测试",
+    "phase_4": "综合集成测试"
+  },
+  "test_results": [
+    {
+      "test_id": "Test 38",
+      "test_name": "自定义综合测试场景 (custom-case) - Enhanced with 功能声明 3 项",
+      "status": "PASS",
+      "duration_ms": 294.965042,
+      "category": "f_system_level"
+    }
+  ]
+}

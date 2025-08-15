@@ -19,6 +19,7 @@ class TestCategory(Enum):
     STATUS_MONITORING = "status_monitoring"
     ERROR_HANDLING = "error_handling"
     PERFORMANCE = "performance"
+    F_SYSTEM_LEVEL = "f_system_level"
 
 
 class HttpMethod(Enum):
