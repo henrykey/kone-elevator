@@ -55,6 +55,12 @@ class EnhancedTestResult:
     # 合规性检查
     compliance_check: Optional[Dict[str, Any]] = None
     
+    # Integration & E2E 测试相关 (Test 36-37)
+    ping_attempts: Optional[int] = None  # 从中断到恢复共执行的ping次数
+    downtime_sec: Optional[float] = None  # 通信中断持续时间
+    recovery_timestamp: Optional[str] = None  # 恢复时间（ISO 8601 UTC）
+    post_recovery_call: Optional[Dict[str, Any]] = None  # 恢复后呼叫的完整响应数据
+    
     # 时间戳
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
