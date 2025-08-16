@@ -186,26 +186,31 @@ All requested scopes were properly validated and tokens contained the required p
     def _load_test_guide_mapping(self) -> Dict[str, Dict[str, str]]:
         """加载测试指南中的测试用例映射"""
         return {
+            # 1. Setup
             "Test_1": {
                 "name": "Solution initialization",
                 "description": "Solution initialization",
                 "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials",
                 "category": "Setup"
             },
+            
+            # 2. Elevator mode check
             "Test_2": {
-                "name": "Elevator mode check (non-operational)",
+                "name": "Elevator non-operational mode",
                 "description": "Is the elevator mode operational or not? Note: elevator mode is set to non-operational. Use if applicable to robot use case",
                 "expected_result": "- Elevator mode is true with any of the below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- call is not made",
                 "category": "Elevator Mode Check"
             },
             "Test_3": {
-                "name": "Elevator mode check (operational)",
+                "name": "Elevator operational mode",
                 "description": "Is the elevator mode operational or not? Note: elevator is set to operational; Source (any floor) – Destination (any floor)",
                 "expected_result": "- Elevator mode is false with all below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator destination is correct and as requested",
                 "category": "Elevator Mode Check"
             },
+            
+            # 3. Elevator Call Giving (Tests 4-20)
             "Test_4": {
-                "name": "Basic elevator call",
+                "name": "Basic call",
                 "description": "Call: Basic call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
                 "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested",
                 "category": "Elevator Call Giving"
@@ -217,36 +222,213 @@ All requested scopes were properly validated and tokens contained the required p
                 "category": "Elevator Call Giving"
             },
             "Test_6": {
-                "name": "Unlisted action call",
+                "name": "Action call with invalid action id",
                 "description": "Call: Action call with action id = 200, 0 [Unlisted action (range as in action payload)] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
                 "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"\n- error message - \" Ignoring call, unknown call action: UNDEFINED\" if 0",
                 "category": "Elevator Call Giving"
             },
             "Test_7": {
-                "name": "Mixed action call (first)",
-                "description": "Call: Action call with action id = 3, 4 [Mixed action call] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"",
+                "name": "Disabled action call",
+                "description": "Call: Disabled action call with action id = 4 [listed enabled action (range as in action payload)] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, disabled call action: {{actionid}}\"",
                 "category": "Elevator Call Giving"
             },
             "Test_8": {
-                "name": "Mixed action call (second)",
-                "description": "Call: Action call with action id = 3, 4 [Mixed action call] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"",
+                "name": "Mixed action call (invalid direction)",
+                "description": "Call: Mixed action call with action id = 2002 -> Source: any floor. Note: This is applicable for Landing Call only. Elevator at first floor and direction down. use if applicable to robot use case",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \"INVALID_DIRECTION \"",
                 "category": "Elevator Call Giving"
             },
             "Test_9": {
-                "name": "Delay call (valid)",
-                "description": "Call: Delay call with delay = 5 -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested",
+                "name": "Delay call (valid delay)",
+                "description": "Call: Delay call with delay = 5 -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only. use if applicable to robot use case",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
                 "category": "Elevator Call Giving"
             },
             "Test_10": {
-                "name": "Delay call (invalid)",
-                "description": "Call: Delay call with delay = 40 -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Call allowed and Call cancelled\n- Response code 201\n- error message - \" Invalid json payload\"",
+                "name": "Delay call (invalid delay >30s)",
+                "description": "Call: Delay call with delay = 40 [Invalid delay (range 0-30sec)] -> source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Invalid json payload\"",
                 "category": "Elevator Call Giving"
             },
-            # 继续其他测试用例映射...
+            "Test_11": {
+                "name": "Transfer floor call",
+                "description": "Call: Transfer floor call -> Source: any floor, Destination: any floor Note: The source and destination floors cannot be served by the same elevator. Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- modified destination included\n- modified reason included\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Elevator Call Giving"
+            },
+            "Test_12": {
+                "name": "Through lift call (same floor, opposite sides)",
+                "description": "Call: Through lift call -> Source: any floor, Destination: any floor Note: Both source and destination floors are on the same floor but opposite side of the elevator.",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- cancel Reason \"SAME_SOURCE_AND_DEST_FLOOR\"",
+                "category": "Elevator Call Giving"
+            },
+            "Test_13": {
+                "name": "No travel call (same floor)",
+                "description": "Call: No travel call -> Source: any floor, Destination: same as source floor Note: Both source and destination floors are on the same floor and same side of the elevator.",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- cancel Reason \"SAME_SOURCE_AND_DEST_FLOOR\"",
+                "category": "Elevator Call Giving"
+            },
+            "Test_14": {
+                "name": "Specific lift call (allowed lifts)",
+                "description": "Call: Specific lift Call-> Source: any floor, Destination: any floor Note: Allowed Lift \"allowed lifts\" id to be included in the send request. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator starts moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed",
+                "category": "Elevator Call Giving"
+            },
+            "Test_15": {
+                "name": "Cancel call",
+                "description": "Call: Cancel Call-> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Request Elevator to move to any floor\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- Send request cancel with payload including Session id\n- Response code 201\n- Elevator stop moving",
+                "category": "Elevator Call Giving"
+            },
+            "Test_16": {
+                "name": "Null call (invalid destination)",
+                "description": "Call: Null call -> Source: any floor, Destination: any floor Note: Destination floor is invalid and not part of building config. Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \"Ignoring call, unable to resolve destination: area:****\"",
+                "category": "Elevator Call Giving"
+            },
+            "Test_17": {
+                "name": "Null call (undefined destination)",
+                "description": "Call: Null call -> Source: any floor, Destination: - Note: Destination floor is not defined. Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, destination not defined",
+                "category": "Elevator Call Giving"
+            },
+            "Test_18": {
+                "name": "Null call (invalid source)",
+                "description": "Call: Null call -> Source: any floor, Destination: any floor Note: Source floor is invalid and not part of building config. Landing Call – Source only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \"Ignoring call, unable to resolve area: area:****\"",
+                "category": "Elevator Call Giving"
+            },
+            "Test_19": {
+                "name": "Null call (invalid source & destination)",
+                "description": "Call: Null call -> Source: any floor, Destination: any floor Note: Source floor and Destination floor are both invalid and not part of building config.",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \"Ignoring call, unable to resolve area: area:****\"",
+                "category": "Elevator Call Giving"
+            },
+            "Test_20": {
+                "name": "Misplaced call (invalid building ID)",
+                "description": "Call: Misplaced call to Building ID: a4KrX2cei -> Source: any floor, Destination: any floor Note: Building ID is invalid and not part of used resources. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 404\n- error message - \"Building data not found for ID building:a4KrX2cei\"",
+                "category": "Elevator Call Giving"
+            },
+            
+            # 4. Multiple groups and call giving
+            "Test_21": {
+                "name": "Group 2 access (second building id)",
+                "description": "Group 2 (second building id) of physical building's lobby 2 access is provided. lobby 2 call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Possible to select between groups (group 1 or group 2)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Multiple Groups and Call Giving"
+            },
+            "Test_22": {
+                "name": "Group 2 access (group suffix :2)",
+                "description": "Group 2 (suffix :2) of physical building's lobby 2 access is provided. lobby 2 call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Possible to select between groups (group 1 or group 2)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Multiple Groups and Call Giving"
+            },
+            
+            # 5. Integration with access control and call giving
+            "Test_23": {
+                "name": "Access control call (restricted floors)",
+                "description": "Call: Access control call -> Source: any floor, Destination: any floor Note: floors are as defined in the access control permissions. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Robot have access only to the floors specified in the access rights\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Integration with Access Control and Call Giving"
+            },
+            "Test_24": {
+                "name": "Access control call with media id",
+                "description": "Call: Access control call with media id -> Source: any floor, Destination: any floor Note: floors are already defined in the access control system linked with the media id (with and without company code). Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Optional Robot have access only to the floors specified in the access rights\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Integration with Access Control and Call Giving"
+            },
+            
+            # 6. Location control and call giving
+            "Test_25": {
+                "name": "Geographically controlled call",
+                "description": "Call: Geographically controlled call -> Source: any floor, Destination: any floor Note: users are only allowed to place a call within the building they are located. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- While out of range, solution disables all calls\n- Calls cannot be made\n- While in range, solution enable all calls\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Location Control and Call Giving"
+            },
+            "Test_26": {
+                "name": "Barrier call (before/after barrier)",
+                "description": "Call: Barrier call -> Source: any floor, Destination: any floor Note: user is only allowed to place a call after crossing the barrier. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Before barrier, solution disables all calls\n- Calls cannot be made\n- After barrier, solution enables all calls\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Location Control and Call Giving"
+            },
+            "Test_27": {
+                "name": "Barrier control and call (robot releases barrier)",
+                "description": "Call: Barrier control and call -> Source: any floor, Destination: any floor Note: user is only allowed to place a call after crossing the barrier. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Before barrier, solution disables all calls\n- Calls cannot be made\n- At barrier, solution releases barrier for passage\n- After barrier, solution enables all calls\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Location Control and Call Giving"
+            },
+            "Test_28": {
+                "name": "Multiple automatic calls prevention",
+                "description": "Call: Multiple automatic calls prevention -> Source: any floor, Destination: any floor Note: user should only place single call for a journey. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door\n- No other calls generated while elevator approaches",
+                "category": "Location Control and Call Giving"
+            },
+            "Test_29": {
+                "name": "Multiple automatic calls prevention (group id)",
+                "description": "Call: Multiple automatic call prevention for Group (Lobby) 2 -> Source: any floor, Destination: any floor Note: user should only place single call for a journey to the correct building id. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Possible to automatically select between groups (building id 1 or building id 2)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door\n- No other calls generated while elevator approaches",
+                "category": "Location Control and Call Giving"
+            },
+            "Test_30": {
+                "name": "Multiple automatic calls prevention (group suffix)",
+                "description": "Call: Multiple automatic call prevention for Group (Lobby) 2 -> Source: any floor, Destination: any floor Note: user should only place single call for a journey to the correct group suffix. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Possible to automatically select between groups (group suffix 1 or group suffix 2)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door\n- No other calls generated while elevator approaches",
+                "category": "Location Control and Call Giving"
+            },
+            
+            # 7. Elevator locks and call giving
+            "Test_31": {
+                "name": "Enable locks (locked floor)",
+                "description": "Call: Enable locks -> Source: any floor, Destination: any floor Note: in this use case source floor is locked by ACS solution. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and cancelled\n- Response code 201\n- cancel Reason - \"FLOOR_IS_LOCKED\"",
+                "category": "Elevator Locks and Call Giving"
+            },
+            "Test_32": {
+                "name": "Disable locks (unlocked floor)",
+                "description": "Call: Disable locks -> Source: any floor, Destination: any floor Note: in this use case source floor is unlocked by ACS solution. Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Elevator Locks and Call Giving"
+            },
+            
+            # 8. Device disabling and call giving
+            "Test_33": {
+                "name": "Allocation interrupted (all elevators disabled)",
+                "description": "Call: Elevator's allocation interrupted (all elevators disabled) -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and cancelled\n- Response code 201\n- cancel Reason - \"NO_LIFT_AVAILABLE \"\n- Indicate call failure to user (such as timeout)",
+                "category": "Device Disabling and Call Giving"
+            },
+            "Test_34": {
+                "name": "Allocation resumed (all elevators enabled)",
+                "description": "Call: Elevator's allocation interrupted (all elevators enabled) -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Device Disabling and Call Giving"
+            },
+            "Test_35": {
+                "name": "Communication interrupted (DTU disconnected)",
+                "description": "Call: End-to-end communication interrupted (DTU disconnected) -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call stuck on created\n- Response code 201\n- error: 1005\n- Indicate call failure to user (such as timeout)",
+                "category": "Device Disabling and Call Giving"
+            },
+            "Test_36": {
+                "name": "Call failure, communication interrupted (ping check)",
+                "description": "Call: Call failure, communication interrupted -> Ping building or group Note: Start a ping sequence and stop pinging after positive response is obtained",
+                "expected_result": "- Ping failed\n- Communication restored\n- Ping Successful",
+                "category": "Device Disabling and Call Giving"
+            },
+            "Test_37": {
+                "name": "Communication enabled (DTU connected)",
+                "description": "Call: End-to-end communication enabled (DTU connected) -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking as needed\n- if applicable hold open elevator door",
+                "category": "Device Disabling and Call Giving"
+            },
+            "Test_38": {
+                "name": "Custom case",
+                "description": "Custom case",
+                "expected_result": "To be filled",
+                "category": "Other System Functionality Checks"
+            }
         }
     
     def _extract_test_number(self, test_id: str) -> int:
