@@ -996,15 +996,24 @@ class KoneValidationSuite:
         """Test 18: WebSocket连接测试"""
         
         try:
+            # 确保WebSocket连接
+            await self.driver._ensure_connection()
+            result.add_observation({'phase': 'connection_check', 'status': 'WebSocket connected'})
+            
             # 测试订阅事件
-            subscribe_resp = await self.driver.subscribe(self.building_id, self.group_id)
+            subscribe_resp = await self.driver.subscribe(
+                self.building_id, 
+                ['lift_+/status'], 
+                duration=60, 
+                group_id=self.group_id
+            )
             result.add_observation({'phase': 'subscribe', 'data': subscribe_resp})
             
             if subscribe_resp.get('statusCode') == 201:
                 # 等待并获取事件
                 await asyncio.sleep(1)
-                events = await self.driver.next_event(self.building_id, self.group_id)
-                result.add_observation({'phase': 'events', 'data': events})
+                event = await self.driver.next_event(timeout=5.0)
+                result.add_observation({'phase': 'events', 'data': event})
                 result.set_result("Pass", "WebSocket connection and event subscription successful")
             else:
                 result.set_result("Fail", f"WebSocket subscription failed: {subscribe_resp.get('error', '')}")
@@ -1182,8 +1191,17 @@ class KoneValidationSuite:
         """Test 26: 事件订阅持久性测试"""
         
         try:
+            # 确保WebSocket连接
+            await self.driver._ensure_connection()
+            result.add_observation({'phase': 'connection', 'status': 'WebSocket connected'})
+            
             # 订阅事件
-            subscribe_resp = await self.driver.subscribe(self.building_id, self.group_id)
+            subscribe_resp = await self.driver.subscribe(
+                self.building_id, 
+                ['call/+/state_change', 'lift_+/status'], 
+                duration=120, 
+                group_id=self.group_id
+            )
             result.add_observation({'phase': 'subscribe', 'data': subscribe_resp})
             
             if subscribe_resp.get('statusCode') == 201:
@@ -1191,16 +1209,20 @@ class KoneValidationSuite:
                 call_resp = await self.driver.call_action(
                     self.building_id, 1000, 2, destination=2000, group_id=self.group_id
                 )
+                result.add_observation({'phase': 'call', 'data': call_resp})
                 
                 # 等待事件
                 await asyncio.sleep(2)
-                events = await self.driver.next_event(self.building_id, self.group_id)
-                result.add_observation({'phase': 'events', 'data': events})
-                
-                if events and len(events) > 0:
-                    result.set_result("Pass", f"Event subscription persistent: {len(events)} events received")
-                else:
-                    result.set_result("Fail", "No events received from subscription")
+                try:
+                    event = await self.driver.next_event(timeout=10.0)
+                    result.add_observation({'phase': 'events', 'data': event})
+                    
+                    if event:
+                        result.set_result("Pass", f"Event subscription persistent: event received")
+                    else:
+                        result.set_result("Fail", "No events received from subscription")
+                except Exception as event_error:
+                    result.set_result("Fail", f"Event timeout: {str(event_error)}")
             else:
                 result.set_result("Fail", f"Event subscription failed: {subscribe_resp.get('error', '')}")
         except Exception as e:
@@ -1379,16 +1401,32 @@ class KoneValidationSuite:
         """Test 32: WebSocket重连测试"""
         
         try:
-            # 首次连接
-            subscribe_resp = await self.driver.subscribe(self.building_id, self.group_id)
+            # 首次连接和订阅
+            await self.driver._ensure_connection()
+            subscribe_resp = await self.driver.subscribe(
+                self.building_id, 
+                ['lift_+/status'], 
+                duration=60, 
+                group_id=self.group_id
+            )
             result.add_observation({'phase': 'initial_connect', 'data': subscribe_resp})
             
             if subscribe_resp.get('statusCode') == 201:
-                # 模拟连接中断后重连
+                # 模拟连接中断
+                if hasattr(self.driver, 'websocket') and self.driver.websocket:
+                    await self.driver.websocket.close()
+                    result.add_observation({'phase': 'disconnect', 'status': 'WebSocket closed'})
+                
+                # 等待一下
                 await asyncio.sleep(1)
                 
-                # 再次订阅（应该处理重连）
-                reconnect_resp = await self.driver.subscribe(self.building_id, self.group_id)
+                # 再次订阅（应该触发重连）
+                reconnect_resp = await self.driver.subscribe(
+                    self.building_id, 
+                    ['lift_+/status'], 
+                    duration=60, 
+                    group_id=self.group_id
+                )
                 result.add_observation({'phase': 'reconnect', 'data': reconnect_resp})
                 
                 if reconnect_resp.get('statusCode') in [200, 201]:
@@ -1514,8 +1552,14 @@ class KoneValidationSuite:
             config_resp = await self.driver.get_building_config(self.building_id, self.group_id)
             integration_steps.append({'step': 'get_config', 'status': config_resp.get('statusCode'), 'success': config_resp.get('statusCode') == 200})
             
-            # 步骤2：订阅事件
-            subscribe_resp = await self.driver.subscribe(self.building_id, self.group_id)
+            # 步骤2：建立WebSocket连接并订阅事件
+            await self.driver._ensure_connection()
+            subscribe_resp = await self.driver.subscribe(
+                self.building_id, 
+                ['call/+/state_change', 'lift_+/status'], 
+                duration=60, 
+                group_id=self.group_id
+            )
             integration_steps.append({'step': 'subscribe', 'status': subscribe_resp.get('statusCode'), 'success': subscribe_resp.get('statusCode') == 201})
             
             # 步骤3：发起呼叫
@@ -1524,8 +1568,11 @@ class KoneValidationSuite:
             
             # 步骤4：检查事件
             await asyncio.sleep(1)
-            events = await self.driver.next_event(self.building_id, self.group_id)
-            integration_steps.append({'step': 'get_events', 'events_count': len(events) if events else 0, 'success': bool(events)})
+            try:
+                event = await self.driver.next_event(timeout=5.0)
+                integration_steps.append({'step': 'get_events', 'event_received': bool(event), 'success': bool(event)})
+            except Exception as event_error:
+                integration_steps.append({'step': 'get_events', 'event_received': False, 'success': False, 'error': str(event_error)})
             
             # 步骤5：系统ping
             ping_resp = await self.driver.ping(self.building_id, self.group_id)
@@ -1617,8 +1664,14 @@ class KoneValidationSuite:
             config_resp = await self.driver.get_building_config(self.building_id, self.group_id)
             comprehensive_results['config_check'] = config_resp.get('statusCode') == 200
             
-            # 2. 事件订阅
-            subscribe_resp = await self.driver.subscribe(self.building_id, self.group_id)
+            # 2. WebSocket连接和事件订阅
+            await self.driver._ensure_connection()
+            subscribe_resp = await self.driver.subscribe(
+                self.building_id, 
+                ['call/+/state_change', 'lift_+/status'], 
+                duration=60, 
+                group_id=self.group_id
+            )
             comprehensive_results['subscribe_check'] = subscribe_resp.get('statusCode') == 201
             
             # 3. 呼叫测试
@@ -1626,19 +1679,22 @@ class KoneValidationSuite:
             comprehensive_results['call_check'] = call_resp.get('statusCode') == 201
             session_id = call_resp.get('sessionId')
             
-            # 4. 取消测试
+            # 4. 事件检查
+            await asyncio.sleep(1)
+            try:
+                event = await self.driver.next_event(timeout=5.0)
+                comprehensive_results['events_check'] = bool(event)
+            except Exception:
+                comprehensive_results['events_check'] = False
+            
+            # 5. 取消测试
             if session_id:
                 cancel_resp = await self.driver.delete_call(self.building_id, session_id, self.group_id)
                 comprehensive_results['cancel_check'] = cancel_resp.get('statusCode') in [200, 202]
             
-            # 5. 系统ping
+            # 6. 系统ping
             ping_resp = await self.driver.ping(self.building_id, self.group_id)
             comprehensive_results['ping_check'] = ping_resp.get('statusCode') == 200
-            
-            # 6. 事件检查
-            await asyncio.sleep(1)
-            events = await self.driver.next_event(self.building_id, self.group_id)
-            comprehensive_results['events_check'] = bool(events)
             
             result.add_observation({'phase': 'comprehensive_results', 'data': comprehensive_results})
             
