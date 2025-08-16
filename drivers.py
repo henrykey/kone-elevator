@@ -573,16 +573,24 @@ class KoneDriverV2(ElevatorDriver):
     async def delete_call(self, building_id: str, session_id: str,
                          group_id: Optional[str] = None) -> dict:
         """删除呼叫"""
+        # 确保session_id是数字格式
+        if isinstance(session_id, str):
+            try:
+                numeric_session_id = int(session_id)
+            except (ValueError, TypeError):
+                # 如果无法转换，使用一个默认的数字ID
+                numeric_session_id = self._generate_numeric_request_id()
+        else:
+            numeric_session_id = session_id
+            
         message = {
             'type': 'lift-call-api-v2', 
             'buildingId': building_id,
             'callType': 'delete',
             'groupId': group_id or '1',
             'payload': {
-                'request_id': self._generate_numeric_request_id(),  # 数字格式，符合官方规范
-                'session_id': session_id,
-                'time': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-                'terminal': 1  # delete类型需要terminal字段
+                # 根据官方文档，只需要session_id
+                'session_id': numeric_session_id
             }
         }
         return await self._send_message(message)
