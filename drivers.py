@@ -261,7 +261,7 @@ class KoneDriverV2(ElevatorDriver):
     async def _ensure_connection(self):
         """确保WebSocket连接"""
         async with self.connection_lock:
-            if self.websocket and not self.websocket.closed:
+            if self.websocket and not self.websocket.closed and self.is_listening:
                 return
                 
             token = await self._get_access_token()
@@ -274,6 +274,11 @@ class KoneDriverV2(ElevatorDriver):
             })
             
             try:
+                # 如果之前有WebSocket连接，关闭它
+                if self.websocket:
+                    self.is_listening = False
+                    await self.websocket.close()
+                
                 self.websocket = await websockets.connect(uri, subprotocols=['koneapi'])
                 
                 log_evidence('response', {
@@ -281,7 +286,12 @@ class KoneDriverV2(ElevatorDriver):
                     'note': 'WebSocket connection established'
                 })
                 
-                # 注意：不再启动独立的事件监听，改用直接通信模式
+                # 启动后台事件监听器
+                if not self.is_listening:
+                    self.is_listening = True
+                    asyncio.create_task(self._listen_events())
+                    # 给事件监听器一点时间启动
+                    await asyncio.sleep(0.1)
                     
             except Exception as e:
                 log_evidence('response', {
@@ -291,7 +301,7 @@ class KoneDriverV2(ElevatorDriver):
                 raise ConnectionError(f"Failed to establish WebSocket connection: {e}")
     
     async def _listen_events(self):
-        """监听WebSocket事件"""
+        """监听WebSocket事件并分发到相应队列"""
         try:
             async for message in self.websocket:
                 try:
@@ -302,7 +312,26 @@ class KoneDriverV2(ElevatorDriver):
                         'data': data
                     })
                     
-                    await self.event_queue.put(data)
+                    # 检查是否是响应消息
+                    response_request_id = None
+                    
+                    # 检查不同格式的request_id
+                    if data.get('requestId'):
+                        response_request_id = data.get('requestId')
+                    elif data.get('payload', {}).get('request_id'):
+                        response_request_id = data.get('payload', {}).get('request_id')
+                    elif data.get('callType') == 'ping' and data.get('data', {}).get('request_id'):
+                        # ping响应的特殊格式
+                        response_request_id = data.get('data', {}).get('request_id')
+                    
+                    # 如果是响应消息，放入对应的pending request
+                    if response_request_id and str(response_request_id) in self.pending_requests:
+                        future = self.pending_requests[str(response_request_id)]
+                        if not future.done():
+                            future.set_result(data)
+                    else:
+                        # 否则是事件，放入事件队列
+                        await self.event_queue.put(data)
                     
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to decode message: {e}")
@@ -315,7 +344,7 @@ class KoneDriverV2(ElevatorDriver):
             self.is_listening = False
     
     async def _send_message(self, message: dict) -> dict:
-        """发送WebSocket消息并等待响应 - 使用直接模式，类似testall.py"""
+        """发送WebSocket消息并等待响应 - 使用事件驱动模式"""
         await self._ensure_connection()
         
         # 从message中获取request_id，优先从payload中获取
@@ -334,45 +363,27 @@ class KoneDriverV2(ElevatorDriver):
         })
         
         try:
+            # 创建Future来等待响应
+            future = asyncio.Future()
+            self.pending_requests[str(request_id)] = future
+            
             # 发送消息
             await self.websocket.send(json.dumps(message))
             
-            # 直接等待响应，类似testall.py的方式
-            timeout_seconds = 10.0
-            start_time = time.time()
-            
-            while time.time() - start_time < timeout_seconds:
-                try:
-                    # 直接从WebSocket接收消息
-                    response_message = await asyncio.wait_for(self.websocket.recv(), timeout=2.0)
-                    response = json.loads(response_message)
-                    
-                    # 检查是否是对应的响应，支持数字和字符串ID
-                    response_request_id = (response.get('requestId') or 
-                                         response.get('payload', {}).get('request_id'))
-                    
-                    # 支持数字和字符串ID比较
-                    if (str(response_request_id) == str(request_id) or 
-                        response_request_id == request_id):
-                        log_evidence('response', {
-                            'request_id': request_id,
-                            'response': response
-                        })
-                        return response
-                    else:
-                        # 不是对应响应，可能是其他消息，继续等待
-                        continue
-                        
-                except asyncio.TimeoutError:
-                    # 2秒超时，继续循环等待
-                    continue
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to decode WebSocket message: {e}")
-                    continue
-                    
-            # 总超时
-            raise TimeoutError(f"No response received for request {request_id} within {timeout_seconds}s")
-            
+            # 等待响应
+            try:
+                response = await asyncio.wait_for(future, timeout=10.0)
+                log_evidence('response', {
+                    'request_id': request_id,
+                    'response': response
+                })
+                return response
+            except asyncio.TimeoutError:
+                raise TimeoutError(f"No response received for request {request_id} within 10s")
+            finally:
+                # 清理pending request
+                self.pending_requests.pop(str(request_id), None)
+                
         except websockets.exceptions.ConnectionClosed as e:
             self.websocket = None
             self.is_listening = False
@@ -412,11 +423,10 @@ class KoneDriverV2(ElevatorDriver):
         return await self._send_message(message)
     
     async def ping(self, building_id: str, group_id: Optional[str] = None) -> dict:
-        """Ping测试 - 特殊处理，等待实际的ping响应而非状态确认"""
-        import random
+        """Ping测试 - 特殊处理，等待callType=ping的响应"""
         await self._ensure_connection()
         
-        numeric_request_id = random.randint(100000000, 999999999)
+        request_id = self._generate_numeric_request_id()
         
         message = {
             'type': 'common-api',
@@ -424,12 +434,12 @@ class KoneDriverV2(ElevatorDriver):
             'callType': 'ping',
             'groupId': group_id or '1',
             'payload': {
-                'request_id': numeric_request_id  # 必须是数字
+                'request_id': request_id
             }
         }
         
         log_evidence('request', {
-            'request_id': numeric_request_id,
+            'request_id': request_id,
             'message': message
         })
         
@@ -437,41 +447,32 @@ class KoneDriverV2(ElevatorDriver):
             # 发送消息
             await self.websocket.send(json.dumps(message))
             
-            # ping特殊处理：等待callType=ping的响应
+            # ping特殊处理：等待callType=ping的响应，忽略状态确认
             timeout_seconds = 10.0
             start_time = time.time()
             
             while time.time() - start_time < timeout_seconds:
                 try:
-                    # 直接从WebSocket接收消息
-                    response_message = await asyncio.wait_for(self.websocket.recv(), timeout=2.0)
-                    response = json.loads(response_message)
+                    event = await asyncio.wait_for(self.event_queue.get(), timeout=2.0)
                     
-                    # 对于ping，寻找callType=ping的响应
-                    if response.get('callType') == 'ping':
-                        # 验证request_id匹配
-                        response_request_id = response.get('data', {}).get('request_id')
-                        if response_request_id == numeric_request_id:
-                            log_evidence('response', {
-                                'request_id': numeric_request_id,
-                                'response': response
-                            })
-                            return response
-                    # 否则继续等待下一个消息
+                    # 检查是否是我们要的ping响应
+                    if (event.get('callType') == 'ping' and 
+                        event.get('data', {}).get('request_id') == request_id):
+                        log_evidence('response', {
+                            'request_id': request_id,
+                            'response': event
+                        })
+                        return event
+                    else:
+                        # 不是我们要的响应，可能是状态确认或其他事件，继续等待
+                        continue
                         
                 except asyncio.TimeoutError:
                     continue
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to decode WebSocket message: {e}")
-                    continue
                     
             # 超时
-            raise TimeoutError(f"No ping response received for request {numeric_request_id} within {timeout_seconds}s")
+            raise TimeoutError(f"No ping response received for request {request_id} within {timeout_seconds}s")
             
-        except websockets.exceptions.ConnectionClosed as e:
-            self.websocket = None
-            self.is_listening = False
-            raise ConnectionError(f"WebSocket connection closed: {e}")
         except Exception as e:
             raise Exception(f"Ping communication error: {e}")
     
@@ -526,7 +527,48 @@ class KoneDriverV2(ElevatorDriver):
                 'call': call_data
             }
         }
-        return await self._send_message(message)
+        
+        # 发送消息并获取状态确认
+        status_response = await self._send_message(message)
+        
+        # 如果状态确认成功，等待实际的呼叫事件
+        if status_response.get('statusCode') == 201:
+            try:
+                # 等待包含sessionId的事件
+                timeout_seconds = 10.0
+                start_time = time.time()
+                
+                while time.time() - start_time < timeout_seconds:
+                    try:
+                        event = await asyncio.wait_for(self.event_queue.get(), timeout=2.0)
+                        
+                        # 检查是否是呼叫相关的事件
+                        if (event.get('data', {}).get('session_id') or 
+                            event.get('sessionId') or
+                            'session_id' in str(event)):
+                            # 合并状态响应和事件数据，提取session_id到根级别
+                            combined_response = status_response.copy()
+                            combined_response.update(event)
+                            
+                            # 确保sessionId在根级别可访问
+                            if 'session_id' in event.get('data', {}):
+                                combined_response['sessionId'] = event['data']['session_id']
+                            elif 'sessionId' in event:
+                                combined_response['sessionId'] = event['sessionId']
+                                
+                            return combined_response
+                        
+                    except asyncio.TimeoutError:
+                        continue
+                        
+                # 如果没有收到事件，返回状态响应
+                return status_response
+                
+            except Exception as e:
+                logger.warning(f"Failed to get call event: {e}")
+                return status_response
+        else:
+            return status_response
     
     async def hold_open(self, building_id: str, lift_deck: str, served_area: int,
                        hard_time: int, soft_time: Optional[int] = None,
