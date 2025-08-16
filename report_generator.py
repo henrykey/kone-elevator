@@ -43,6 +43,19 @@ class AuthTokenInfo:
 
 @dataclass
 @dataclass
+class APICallInfo:
+    """API调用详细信息"""
+    interface_type: str  # 接口类型: "WebSocket" 或 "HTTP REST"
+    url: str            # 请求URL
+    method: Optional[str] = None  # HTTP方法 (GET/POST/PUT/DELETE) 或 WebSocket消息类型
+    request_parameters: Optional[Dict] = None  # 发送的请求参数
+    response_data: Optional[List[Dict]] = None  # 响应数据 (限制前1-2组)
+    status_code: Optional[int] = None    # HTTP状态码
+    timestamp: Optional[str] = None      # 调用时间戳
+    error_message: Optional[str] = None  # 错误信息
+
+
+@dataclass
 class TestResult:
     """测试结果数据结构 - 符合KONE测试指南格式，增强版包含详细请求响应信息"""
     test_id: str  # Test编号 (如 "Test 1", "Test 2")
@@ -56,11 +69,14 @@ class TestResult:
     response_data: Optional[Dict] = None
     category: Optional[str] = None
     
-    # 新增的详细信息字段
-    request_parameters: Optional[Dict] = None  # 发送的请求参数
-    request_method: Optional[str] = None       # HTTP方法
-    request_url: Optional[str] = None          # 请求URL
-    response_status_code: Optional[int] = None # HTTP状态码
+    # 详细的API调用信息
+    api_calls: Optional[List[APICallInfo]] = None  # 所有API调用的详细信息
+    
+    # 兼容性字段 (保留原有字段)
+    request_parameters: Optional[Dict] = None  # 主要请求参数
+    request_method: Optional[str] = None       # 主要HTTP方法
+    request_url: Optional[str] = None          # 主要请求URL
+    response_status_code: Optional[int] = None # 主要HTTP状态码
     response_headers: Optional[Dict] = None    # 响应头
     request_timestamp: Optional[str] = None    # 请求时间戳
     response_timestamp: Optional[str] = None   # 响应时间戳
@@ -712,7 +728,31 @@ Ensuring the quality and security of a solution is every developer's responsibil
                     "duration_ms": result.duration_ms,
                     "error_message": result.error_message,
                     "response_data": result.response_data,
-                    "category": result.category
+                    "category": result.category,
+                    
+                    # 详细的API调用信息
+                    "api_calls": [
+                        {
+                            "interface_type": api_call.interface_type,
+                            "url": api_call.url,
+                            "method": api_call.method,
+                            "request_parameters": api_call.request_parameters,
+                            "response_data": api_call.response_data[:2] if api_call.response_data and len(api_call.response_data) > 2 else api_call.response_data,  # 限制前1-2组
+                            "status_code": api_call.status_code,
+                            "timestamp": api_call.timestamp,
+                            "error_message": api_call.error_message
+                        }
+                        for api_call in (result.api_calls or [])
+                    ] if hasattr(result, 'api_calls') and result.api_calls else [],
+                    
+                    # 兼容性字段（保留原有字段）
+                    "request_parameters": result.request_parameters,
+                    "request_method": result.request_method,
+                    "request_url": result.request_url,
+                    "response_status_code": result.response_status_code,
+                    "response_headers": result.response_headers,
+                    "request_timestamp": result.request_timestamp,
+                    "response_timestamp": result.response_timestamp
                 }
                 for result in sorted(report_data["test_results"], key=lambda x: self._extract_test_number(x.test_id))
             ]

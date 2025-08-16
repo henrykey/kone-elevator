@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from drivers import KoneDriverV2, log_evidence, EVIDENCE_BUFFER
-from report_generator import ReportGenerator, TestResult as ReportTestResult
+from report_generator import ReportGenerator, TestResult as ReportTestResult, APICallInfo
 from kone_virtual_buildings import KONE_VIRTUAL_BUILDINGS
 import logging
 
@@ -34,7 +34,7 @@ NETWORK_TIMEOUT = 30  # 30秒超时
 CONNECTION_RETRY_DELAY = 2  # 重试延迟
 
 class TestResult:
-    """测试结果类"""
+    """测试结果类 - 增强版包含详细API调用信息"""
     def __init__(self, test_id: int, name: str, expected: str):
         self.test_id = test_id
         self.name = name
@@ -45,6 +45,25 @@ class TestResult:
         self.reason = ""
         self.start_time = None
         self.end_time = None
+        
+        # 详细的API调用信息
+        self.api_calls: List[APICallInfo] = []
+        
+    def add_api_call(self, interface_type: str, url: str, method: str = None, 
+                     request_params: Dict = None, response_data: List = None,
+                     status_code: int = None, error_message: str = None):
+        """添加API调用信息"""
+        api_call = APICallInfo(
+            interface_type=interface_type,
+            url=url,
+            method=method,
+            request_parameters=request_params,
+            response_data=response_data[:2] if response_data and len(response_data) > 2 else response_data,  # 限制前1-2组
+            status_code=status_code,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            error_message=error_message
+        )
+        self.api_calls.append(api_call)
         
     def set_request(self, request: Dict[str, Any]):
         """设置请求数据"""
@@ -69,7 +88,20 @@ class TestResult:
             'observed': self.observed,
             'result': self.result,
             'reason': self.reason,
-            'duration': (self.end_time - self.start_time) if self.start_time and self.end_time else None
+            'duration': (self.end_time - self.start_time) if self.start_time and self.end_time else None,
+            'api_calls': [
+                {
+                    'interface_type': call.interface_type,
+                    'url': call.url,
+                    'method': call.method,
+                    'request_parameters': call.request_parameters,
+                    'response_data': call.response_data,
+                    'status_code': call.status_code,
+                    'timestamp': call.timestamp,
+                    'error_message': call.error_message
+                }
+                for call in self.api_calls
+            ]
         }
 
 class KoneValidationSuite:
@@ -91,6 +123,36 @@ class KoneValidationSuite:
         """加载配置文件"""
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
+    
+    def _create_landing_call_example(self, source_area: int, destination_area: int = None, action: int = 2002) -> Dict:
+        """创建标准的Landing Call API请求示例"""
+        call_request = {
+            "type": "lift-call-api-v2",
+            "buildingId": self.building_id,
+            "callType": "action", 
+            "groupId": self.group_id,
+            "payload": {
+                "request_id": self._generate_numeric_request_id(),
+                "area": source_area,  # source floor area id
+                "time": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+                "terminal": 1,
+                "call": {
+                    "action": action,
+                    "activate_call_states": ["being_fixed"]
+                }
+            }
+        }
+        
+        # 如果指定了目标楼层，添加destination
+        if destination_area is not None:
+            call_request["payload"]["call"]["destination"] = destination_area
+            
+        return call_request
+    
+    def _generate_numeric_request_id(self) -> int:
+        """生成数字型请求ID"""
+        import random
+        return random.randint(100000000, 999999999)
     
     async def setup(self):
         """初始化测试环境 - 使用KONE推荐的虚拟建筑"""
@@ -308,7 +370,7 @@ class KoneValidationSuite:
     async def test_01_initialization(self, result: TestResult):
         """Test 1: 初始化测试 - 调用config、actions、ping三个API"""
         
-        # 1. Config
+        # 1. Config API 调用
         config_req = {
             'type': 'common-api',
             'buildingId': self.building_id,
@@ -324,6 +386,18 @@ class KoneValidationSuite:
         try:
             config_resp = await self.driver.get_building_config(self.building_id, self.group_id)
             result.add_observation({'phase': 'config_response', 'data': config_resp})
+            
+            # 添加API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="common-api/config",
+                request_params=config_req,
+                response_data=[config_resp] if config_resp else [],
+                status_code=config_resp.get('statusCode') if config_resp else None,
+                error_message=None if config_resp.get('statusCode') in [200, 201] else f"Config API returned status {config_resp.get('statusCode')}"
+            )
+            
             if config_resp.get('statusCode') in [200, 201]:
                 success_count += 1
             else:
@@ -331,11 +405,41 @@ class KoneValidationSuite:
         except Exception as e:
             result.add_observation({'phase': 'config_error', 'error': str(e)})
             error_messages.append(f"Config API failed: {str(e)}")
+            
+            # 添加失败的API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="common-api/config",
+                request_params=config_req,
+                response_data=[],
+                status_code=None,
+                error_message=str(e)
+            )
         
         # 2. 测试Actions API
+        actions_req = {
+            'type': 'common-api',
+            'buildingId': self.building_id,
+            'callType': 'actions',
+            'groupId': self.group_id
+        }
+        
         try:
             actions_resp = await self.driver.get_actions(self.building_id, self.group_id)
             result.add_observation({'phase': 'actions_response', 'data': actions_resp})
+            
+            # 添加API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="common-api/actions",
+                request_params=actions_req,
+                response_data=[actions_resp] if actions_resp else [],
+                status_code=actions_resp.get('statusCode') if actions_resp else None,
+                error_message=None if actions_resp.get('statusCode') in [200, 201] else f"Actions API returned status {actions_resp.get('statusCode')}"
+            )
+            
             if actions_resp.get('statusCode') in [200, 201]:
                 success_count += 1
             else:
@@ -343,11 +447,41 @@ class KoneValidationSuite:
         except Exception as e:
             result.add_observation({'phase': 'actions_error', 'error': str(e)})
             error_messages.append(f"Actions API failed: {str(e)}")
+            
+            # 添加失败的API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="common-api/actions",
+                request_params=actions_req,
+                response_data=[],
+                status_code=None,
+                error_message=str(e)
+            )
         
         # 3. 测试Ping API
+        ping_req = {
+            'type': 'common-api',
+            'buildingId': self.building_id,
+            'callType': 'ping',
+            'groupId': self.group_id
+        }
+        
         try:
             ping_resp = await self.driver.ping(self.building_id, self.group_id)
             result.add_observation({'phase': 'ping_response', 'data': ping_resp})
+            
+            # 添加API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="common-api/ping",
+                request_params=ping_req,
+                response_data=[ping_resp] if ping_resp else [],
+                status_code=200 if ping_resp.get('callType') == 'ping' and ping_resp.get('data') else 400,
+                error_message=None if ping_resp.get('callType') == 'ping' and ping_resp.get('data') else f"Ping API invalid response format: {ping_resp}"
+            )
+            
             # ping响应格式不同，检查callType和data字段
             if ping_resp.get('callType') == 'ping' and ping_resp.get('data'):
                 success_count += 1
@@ -356,6 +490,17 @@ class KoneValidationSuite:
         except Exception as e:
             result.add_observation({'phase': 'ping_error', 'error': str(e)})
             error_messages.append(f"Ping API failed: {str(e)}")
+            
+            # 添加失败的API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="common-api/ping",
+                request_params=ping_req,
+                response_data=[],
+                status_code=None,
+                error_message=str(e)
+            )
         
         # 评估结果
         if success_count == 3:
@@ -407,7 +552,41 @@ class KoneValidationSuite:
         """Test 3: 检查运营模式并进行基本呼梯测试"""
         
         # 订阅状态
-        await self.driver.subscribe(self.building_id, ['lift_+/status'], 60, self.group_id)
+        subscribe_req = {
+            'type': 'monitor-api',
+            'buildingId': self.building_id,
+            'callType': 'subscribe',
+            'groupId': self.group_id,
+            'payload': {
+                'area': 'lift_+/status',
+                'time': 60
+            }
+        }
+        
+        try:
+            await self.driver.subscribe(self.building_id, ['lift_+/status'], 60, self.group_id)
+            
+            # 添加订阅API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="monitor-api/subscribe",
+                request_params=subscribe_req,
+                response_data=[{"subscribed": True}],
+                status_code=200,
+                error_message=None
+            )
+            
+        except Exception as e:
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="monitor-api/subscribe",
+                request_params=subscribe_req,
+                response_data=[],
+                status_code=None,
+                error_message=str(e)
+            )
         
         # 等待运营模式
         operational = False
@@ -443,11 +622,40 @@ class KoneValidationSuite:
         }
         result.set_request(call_req)
         
-        call_resp = await self.driver.call_action(
-            self.building_id, 1000, 2, destination=2000, group_id=self.group_id
-        )
-        result.add_observation({'phase': 'call_response', 'data': call_resp})
-        
+        try:
+            call_resp = await self.driver.call_action(
+                self.building_id, 1000, 2, destination=2000, group_id=self.group_id
+            )
+            result.add_observation({'phase': 'call_response', 'data': call_resp})
+            
+            # 添加呼梯API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="lift-call-api-v2/action",
+                request_params=call_req,
+                response_data=[call_resp] if call_resp else [],
+                status_code=call_resp.get('statusCode') if call_resp else None,
+                error_message=None if call_resp.get('statusCode') == 201 else f"Call API returned status {call_resp.get('statusCode')}"
+            )
+            
+        except Exception as e:
+            result.add_observation({'phase': 'call_error', 'error': str(e)})
+            
+            # 添加失败的API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="lift-call-api-v2/action",
+                request_params=call_req,
+                response_data=[],
+                status_code=None,
+                error_message=str(e)
+            )
+            
+            result.set_result("Fail", f"Call action failed: {str(e)}")
+            return
+            
         if call_resp.get('statusCode') == 201:
             result.set_result("Pass", "Operational mode confirmed with successful call")
         else:
@@ -455,38 +663,61 @@ class KoneValidationSuite:
     
     # Test 4: 基础呼梯
     async def test_04_basic_elevator_call(self, result: TestResult):
-        """Test 4: 基础呼梯测试"""
+        """Test 4: 基础呼梯测试 - Landing Call示例"""
         
-        call_req = {
-            'type': 'lift-call-api-v2',
-            'buildingId': self.building_id,
-            'callType': 'action',
-            'groupId': self.group_id,
-            'payload': {
-                'request_id': str(uuid.uuid4()),
-                'area': 3000,  # 3F
-                'time': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-                'terminal': 1,
-                'call': {
-                    'action': 2,
-                    'destination': 5000  # 5F
-                }
-            }
-        }
+        # 使用标准的Landing Call格式
+        call_req = self._create_landing_call_example(
+            source_area=3000,      # 3F 源楼层
+            destination_area=5000, # 5F 目标楼层 
+            action=2               # 基础呼梯动作
+        )
+        
+        # 为了符合您的示例，调整一些字段
+        call_req["payload"]["call"]["action"] = 2002  # 使用您示例中的action值
+        call_req["payload"]["area"] = 3000  # source floor area id
+        
         result.set_request(call_req)
         
-        call_resp = await self.driver.call_action(
-            self.building_id, 3000, 2, destination=5000, group_id=self.group_id
-        )
-        result.add_observation({'phase': 'call_response', 'data': call_resp})
-        
-        # 检查statusCode而不是status
-        if call_resp.get('statusCode') == 201:
-            session_id = call_resp.get('sessionId')
-            result.add_observation({'phase': 'session_id', 'data': {'session_id': session_id}})
-            result.set_result("Pass", f"Basic call successful, session_id: {session_id}")
-        else:
-            result.set_result("Fail", "Basic call failed")
+        try:
+            call_resp = await self.driver.call_action(
+                self.building_id, 3000, 2, destination=5000, group_id=self.group_id
+            )
+            result.add_observation({'phase': 'call_response', 'data': call_resp})
+            
+            # 添加详细的API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="lift-call-api-v2/action",
+                request_params=call_req,
+                response_data=[call_resp] if call_resp else [],
+                status_code=call_resp.get('statusCode') if call_resp else None,
+                error_message=None if call_resp.get('statusCode') == 201 else f"Call failed with status {call_resp.get('statusCode')}"
+            )
+            
+            # 检查statusCode而不是status
+            if call_resp.get('statusCode') == 201:
+                session_id = call_resp.get('sessionId')
+                result.add_observation({'phase': 'session_id', 'data': {'session_id': session_id}})
+                result.set_result("Pass", f"Basic call successful, session_id: {session_id}")
+            else:
+                result.set_result("Fail", f"Basic call failed with status: {call_resp.get('statusCode')}")
+                
+        except Exception as e:
+            result.add_observation({'phase': 'call_error', 'error': str(e)})
+            
+            # 添加失败的API调用信息
+            result.add_api_call(
+                interface_type="WebSocket",
+                url=self.driver.ws_endpoint,
+                method="lift-call-api-v2/action",
+                request_params=call_req,
+                response_data=[],
+                status_code=None,
+                error_message=str(e)
+            )
+            
+            result.set_result("Fail", f"Basic call failed: {str(e)}")
     
     # Test 5: 保持开门
     async def test_05_hold_open(self, result: TestResult):
@@ -1858,7 +2089,10 @@ class KoneValidationSuite:
                 response_data=result.observed[-1] if result.observed else None,
                 request_parameters=result.request,
                 request_timestamp=result.start_time.isoformat() if result.start_time and hasattr(result.start_time, 'isoformat') else str(result.start_time),
-                response_timestamp=result.end_time.isoformat() if result.end_time and hasattr(result.end_time, 'isoformat') else str(result.end_time)
+                response_timestamp=result.end_time.isoformat() if result.end_time and hasattr(result.end_time, 'isoformat') else str(result.end_time),
+                
+                # 添加详细的API调用信息
+                api_calls=result.api_calls if hasattr(result, 'api_calls') else []
             )
             report_results.append(report_result)
         
