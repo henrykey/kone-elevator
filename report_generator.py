@@ -30,13 +30,26 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class AuthTokenInfo:
+    """Token和鉴权验证信息"""
+    requested_scope: str  # 请求的scope
+    token_scopes: str     # Token实际包含的scope
+    is_match: bool        # 是否匹配
+    error_message: Optional[str] = None  # 错误信息
+    token_type: Optional[str] = None     # Token类型
+    expires_in: Optional[int] = None     # 过期时间
+    timestamp: Optional[str] = None      # 验证时间戳
+
+
+@dataclass
+@dataclass
 class TestResult:
     """测试结果数据结构 - 符合KONE测试指南格式，增强版包含详细请求响应信息"""
     test_id: str  # Test编号 (如 "Test 1", "Test 2")
     name: str  # Test名称
     description: str  # Description描述
     expected_result: str  # Expected result期望结果
-    test_result: str  # Test result测试结果 (PASS/FAIL/待填写)
+    test_result: str  # Test result (PASS/FAIL/TO_BE_FILLED)
     status: str  # 内部状态 (PASS, FAIL, SKIP, ERROR)
     duration_ms: float
     error_message: Optional[str] = None
@@ -69,10 +82,90 @@ class ReportGenerator:
         """
         self.company_name = company_name
         self.report_timestamp = datetime.now()
+        self.auth_token_info: List[AuthTokenInfo] = []  # 存储Token验证信息
         
         # 从指南获取的测试用例映射
         self.test_guide_mapping = self._load_test_guide_mapping()
         logger.info(f"ReportGenerator initialized for {company_name}")
+    
+    def add_auth_token_info(self, auth_info: AuthTokenInfo):
+        """添加Token验证信息"""
+        self.auth_token_info.append(auth_info)
+        logger.debug(f"Added auth token info: {auth_info.requested_scope} -> {auth_info.is_match}")
+    
+    def clear_auth_token_info(self):
+        """清空Token验证信息"""
+        self.auth_token_info.clear()
+    
+    def _generate_auth_section(self) -> str:
+        """生成Token验证部分的Markdown内容"""
+        if not self.auth_token_info:
+            return """This section provides detailed information about OAuth2 token validation and scope verification. 
+Token validation helps identify whether test failures are due to authentication/authorization issues rather than test script problems.
+
+**No authentication data recorded for this session.**
+
+### Expected Authentication Flow
+1. **Token Request**: Client requests access token with specific scope
+2. **Scope Validation**: Verify token contains required scope for operation  
+3. **API Access**: Use validated token for WebSocket and REST API calls
+4. **Error Handling**: Handle 401/403 errors with appropriate scope retry logic
+
+**Recommendation**: Ensure authentication data is collected during test execution for better debugging capability."""
+        
+        auth_section = """This section provides detailed information about OAuth2 token validation and scope verification. 
+Token validation helps identify whether test failures are due to authentication/authorization issues rather than test script problems.
+
+### Token Scope Validation Results
+
+| Requested Scope | Token Scopes | Match | Status | Error Message |
+|----------------|--------------|-------|--------|---------------|
+"""
+        
+        for auth_info in self.auth_token_info:
+            status_icon = "✅" if auth_info.is_match else "❌"
+            error_msg = auth_info.error_message or "-"
+            
+            auth_section += f"| `{auth_info.requested_scope}` | `{auth_info.token_scopes}` | {auth_info.is_match} | {status_icon} | {error_msg} |\n"
+        
+        # 添加统计信息
+        total_auths = len(self.auth_token_info)
+        successful_auths = len([auth for auth in self.auth_token_info if auth.is_match])
+        failed_auths = total_auths - successful_auths
+        
+        auth_section += f"""
+### Authentication Summary
+
+- **Total Scope Validations**: {total_auths}
+- **Successful Validations**: {successful_auths} ✅
+- **Failed Validations**: {failed_auths} ❌
+- **Success Rate**: {(successful_auths / total_auths * 100):.1f if total_auths > 0 else 0}%
+
+### Common Authentication Issues
+
+"""
+        
+        if failed_auths > 0:
+            auth_section += """**⚠️ Authentication failures detected!**
+
+Common causes of authentication failures:
+- **Invalid Scope**: Token does not contain the required scope for the operation
+- **Expired Token**: Token has expired and needs to be refreshed  
+- **Wrong Building/Group**: Scope format incorrect for target building/group
+- **API Credentials**: Invalid client_id or client_secret in configuration
+
+**Troubleshooting Steps:**
+1. Verify the scope format matches: `callv2/group:{buildingId}:{groupId}`
+2. Check token expiration and refresh logic
+3. Validate client credentials in config.yaml
+4. Ensure building and group IDs are correct
+"""
+        else:
+            auth_section += """**✅ All authentication validations successful!**
+
+All requested scopes were properly validated and tokens contained the required permissions."""
+        
+        return auth_section
     
     def _load_test_guide_mapping(self) -> Dict[str, Dict[str, str]]:
         """加载测试指南中的测试用例映射"""
@@ -80,63 +173,85 @@ class ReportGenerator:
             "Test_1": {
                 "name": "Solution initialization",
                 "description": "Solution initialization",
-                "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials"
+                "expected_result": "- Connections established by solution to test environment (Virtual or Preproduction).\n- Authentication successful\n- Get resources successful\n- Building config can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials\n- Building actions can be obtained.\n- Response code 200\n- Response code 401 in case if there is issue with API Credentials",
+                "category": "Setup"
             },
             "Test_2": {
                 "name": "Elevator mode check (non-operational)",
                 "description": "Is the elevator mode operational or not? Note: elevator mode is set to non-operational. Use if applicable to robot use case",
-                "expected_result": "- Elevator mode is true with any of the below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- call is not made"
+                "expected_result": "- Elevator mode is true with any of the below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- call is not made",
+                "category": "Elevator Mode Check"
             },
             "Test_3": {
                 "name": "Elevator mode check (operational)",
                 "description": "Is the elevator mode operational or not? Note: elevator is set to operational; Source (any floor) – Destination (any floor)",
-                "expected_result": "- Elevator mode is false with all below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator destination is correct and as requested"
+                "expected_result": "- Elevator mode is false with all below\n- Fire mode (FRD)\n- Out of service mode (OSS)\n- Attendant mode (ATS)\n- Priority mode (PRC)\n- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator destination is correct and as requested",
+                "category": "Elevator Mode Check"
             },
             "Test_4": {
                 "name": "Basic elevator call",
                 "description": "Call: Basic call -> Source: any floor, Destination: any floor Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested"
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested",
+                "category": "Elevator Call Giving"
             },
             "Test_5": {
                 "name": "Hold open elevator door",
                 "description": "Call: hold open elevator door -> at Source floor, at Destination floor Note: Use if applicable to robot use case Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Elevator door stays open for\n- duration specified in hard time\n- optionally plus duration specified in soft time"
+                "expected_result": "- Elevator door stays open for\n- duration specified in hard time\n- optionally plus duration specified in soft time",
+                "category": "Elevator Call Giving"
             },
             "Test_6": {
                 "name": "Unlisted action call",
                 "description": "Call: Action call with action id = 200, 0 [Unlisted action (range as in action payload)] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"\n- error message - \" Ignoring call, unknown call action: UNDEFINED\" if 0"
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"\n- error message - \" Ignoring call, unknown call action: UNDEFINED\" if 0",
+                "category": "Elevator Call Giving"
             },
             "Test_7": {
                 "name": "Mixed action call (first)",
                 "description": "Call: Action call with action id = 3, 4 [Mixed action call] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\""
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"",
+                "category": "Elevator Call Giving"
             },
             "Test_8": {
                 "name": "Mixed action call (second)",
                 "description": "Call: Action call with action id = 3, 4 [Mixed action call] -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\""
+                "expected_result": "- Option 1: Illegal call prevented by robot controller\n- Option 2: Call allowed and Call cancelled\n- Response code 201\n- error message - \" Ignoring call, unknown call action: {action id}\"",
+                "category": "Elevator Call Giving"
             },
             "Test_9": {
                 "name": "Delay call (valid)",
                 "description": "Call: Delay call with delay = 5 -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested"
+                "expected_result": "- Call accepted and elevator moving\n- Response code 201\n- Session id returned\n- Elevator tracking\n- Floor markings are as expected\n- Floor order is as expected\n- Elevator destination is correct as requested",
+                "category": "Elevator Call Giving"
             },
             "Test_10": {
                 "name": "Delay call (invalid)",
                 "description": "Call: Delay call with delay = 40 -> Source: any floor, Destination: any floor. Note: Landing Call – Source only, Car Call – Destination only",
-                "expected_result": "- Call allowed and Call cancelled\n- Response code 201\n- error message - \" Invalid json payload\""
+                "expected_result": "- Call allowed and Call cancelled\n- Response code 201\n- error message - \" Invalid json payload\"",
+                "category": "Elevator Call Giving"
             },
             # 继续其他测试用例映射...
         }
     
+    def _extract_test_number(self, test_id: str) -> int:
+        """从test_id中提取测试编号"""
+        import re
+        # 支持 "Test 1", "Test_1", "1" 等格式
+        match = re.search(r'(\d+)', test_id)
+        return int(match.group(1)) if match else 0
+    
     def _get_test_info_from_guide(self, test_id: str) -> Dict[str, str]:
         """从测试指南获取测试信息"""
-        guide_info = self.test_guide_mapping.get(test_id, {})
+        # 规范化test_id格式：支持 "Test 1", "Test_1", "1" 等
+        test_num = self._extract_test_number(test_id)
+        normalized_test_id = f"Test_{test_num}"
+        
+        guide_info = self.test_guide_mapping.get(normalized_test_id, {})
         return {
             "name": guide_info.get("name", "Unknown Test"),
             "description": guide_info.get("description", "To be filled"),
-            "expected_result": guide_info.get("expected_result", "Test should execute successfully and return expected results")
+            "expected_result": guide_info.get("expected_result", "Test should execute successfully and return expected results"),
+            "category": guide_info.get("category", "Unknown")
         }
     
     def generate_report(self, test_results: List[TestResult], metadata: Dict[str, Any], output_dir: str = ".", config: Dict[str, Any] = None) -> Dict[str, str]:
@@ -172,12 +287,13 @@ class ReportGenerator:
                 "config": config or {}
             }
             
-            # 生成各种格式的报告
+            # 生成各种格式的报告 - 暂时只生成JSON格式
             reports = {
-                "markdown": self._generate_markdown_report(report_data),
-                "json": self._generate_json_report(report_data),
-                "html": self._generate_html_report(report_data),
-                "excel": self._generate_excel_report(report_data, output_dir)
+                "json": self._generate_json_report(report_data)
+                # 其他格式暂时禁用
+                # "markdown": self._generate_markdown_report(report_data),
+                # "html": self._generate_html_report(report_data),
+                # "excel": self._generate_excel_report(report_data, output_dir)
             }
             
             logger.info(f"Generated reports in {len(reports)} formats")
@@ -203,7 +319,9 @@ class ReportGenerator:
             if not hasattr(result, 'expected_result') or not result.expected_result:
                 result.expected_result = guide_info["expected_result"]
             if not hasattr(result, 'test_result') or not result.test_result:
-                result.test_result = "PASS" if result.status == "PASS" else "FAIL" if result.status == "FAIL" else "待填写"
+                result.test_result = "PASS" if result.status == "PASS" else "FAIL" if result.status == "FAIL" else "TO_BE_FILLED"
+            if not hasattr(result, 'category') or not result.category:
+                result.category = guide_info["category"]
                 
             enhanced_results.append(result)
         
@@ -315,22 +433,17 @@ class ReportGenerator:
 | Failed | {{ statistics.failed_tests }} ❌ |
 | Errors | {{ statistics.error_tests }} ⚠️ |
 | Skipped | {{ statistics.skipped_tests }} ⏭️ |
-| Success Rate | {{ "%.1f"|format(statistics.success_rate) }}% |
-| Total Duration | {{ "%.2f"|format(statistics.total_duration_ms / 1000) }} seconds |
+| Success Rate | {{ "%.1f" | format(statistics.success_rate) }}% |
+| Total Duration | {{ "%.2f" | format(statistics.total_duration_ms / 1000) }} seconds |
 
 ---
 
-## Test Results by Category
-
-{% for category, tests in test_results|groupby('category') %}
-### {{ category or "Uncategorized" }}
+## Test Results Summary
 
 | Test ID | Test Name | Status | Duration (ms) | Error |
 |---------|-----------|--------|---------------|-------|
-{% for test in tests %}
-| {{ test.test_id }} | {{ test.name }} | {{ test.status }} | {{ "%.1f"|format(test.duration_ms) }} | {{ test.error_message or "-" }} |
-{% endfor %}
-
+{% for test in test_results %}
+| {{ test.test_id }} | {{ test.name }} | {{ test.status }} | {{ "%.1f" | format(test.duration_ms) }} | {{ test.error_message or "-" }} |
 {% endfor %}
 
 ---
@@ -342,14 +455,14 @@ class ReportGenerator:
 
 - **Status:** {{ test.status }}
 - **Category:** {{ test.category or "N/A" }}
-- **Duration:** {{ "%.2f"|format(test.duration_ms) }} ms
+- **Duration:** {{ "%.2f" | format(test.duration_ms) }} ms
 {% if test.error_message %}
 - **Error:** {{ test.error_message }}
 {% endif %}
 {% if test.response_data %}
 - **Response Data:** 
 ```json
-{{ test.response_data|tojson(indent=2) }}
+{{ test.response_data | tojson }}
 ```
 {% endif %}
 
@@ -418,11 +531,11 @@ Ensuring the quality and security of a solution is every developer's responsibil
 | Item                     | Value |
 |--------------------------|-------|
 | System name              | {metadata.get("tested_system", "KONE Elevator Control Service")} |
-| System version           | {metadata.get("system_version", "待填写")} |
-| Software name            | {metadata.get("software_name", "待填写")} |
-| Software version         | {metadata.get("software_version", "待填写")} |
+| System version           | {metadata.get("system_version", "To be filled")} |
+| Software name            | {metadata.get("software_name", "To be filled")} |
+| Software version         | {metadata.get("software_version", "To be filled")} |
 | KONE SR-API              | {metadata.get("kone_sr_api_version", "v2.0")} |
-| KONE test assistant email | {metadata.get("kone_assistant_email", "待填写")} |
+| KONE test assistant email | {metadata.get("kone_assistant_email", "To be filled")} |
 
 ---
 
@@ -440,6 +553,12 @@ Ensuring the quality and security of a solution is every developer's responsibil
 
 ---
 
+## Authentication & Token Scope Validation
+
+{self._generate_auth_section()}
+
+---
+
 ## Service Robot API Solution Validation Test Results
 
 | Test | Description | Expected result | Test result |
@@ -447,12 +566,18 @@ Ensuring the quality and security of a solution is every developer's responsibil
 """
         
         # 按测试ID排序并添加详细测试结果表格
-        sorted_results = sorted(report_data["test_results"], key=lambda x: int(x.test_id.replace("Test_", "")))
+        def extract_test_number(test_id):
+            """从测试ID中提取数字，支持 'Test 1' 和 'Test_1' 格式"""
+            import re
+            match = re.search(r'(\d+)', test_id)
+            return int(match.group(1)) if match else 0
+        
+        sorted_results = sorted(report_data["test_results"], key=lambda x: extract_test_number(x.test_id))
         
         for result in sorted_results:
             # 格式化期望结果和测试结果，处理多行文本
             expected_formatted = result.expected_result.replace('\n', '<br>')
-            test_result_formatted = result.test_result.replace('\n', '<br>') if hasattr(result, 'test_result') else "待填写"
+            test_result_formatted = result.test_result.replace('\n', '<br>') if hasattr(result, 'test_result') else "To be filled"
             
             report += f"| {result.test_id} | {result.description} | {expected_formatted} | {test_result_formatted} |\n"
         
@@ -537,34 +662,51 @@ Ensuring the quality and security of a solution is every developer's responsibil
                 "report_version": "1.0"
             },
             "setup": {
-                "setup_description": report_data["metadata"].get("setup", "待填写"),
-                "pre_test_setup": report_data["metadata"].get("pre_test_setup", "待填写")
+                "setup_description": report_data["metadata"].get("setup", "To be filled"),
+                "pre_test_setup": report_data["metadata"].get("pre_test_setup", "To be filled")
             },
             "test_information": {
-                "date": report_data["metadata"].get("date", "待填写"),
+                "date": report_data["metadata"].get("date", "To be filled"),
                 "solution_provider": {
                     "company_name": report_data["metadata"].get("solution_provider", "IBC-AI CO."),
-                    "company_address": report_data["metadata"].get("company_address", "待填写"),
-                    "contact_person_name": report_data["metadata"].get("contact_person", "待填写"),
-                    "email": report_data["metadata"].get("contact_email", "待填写"),
-                    "telephone_number": report_data["metadata"].get("contact_phone", "待填写"),
-                    "tester": report_data["metadata"].get("tester", "待填写")
+                    "company_address": report_data["metadata"].get("company_address", "To be filled"),
+                    "contact_person_name": report_data["metadata"].get("contact_person", "To be filled"),
+                    "email": report_data["metadata"].get("contact_email", "To be filled"),
+                    "telephone_number": report_data["metadata"].get("contact_phone", "To be filled"),
+                    "tester": report_data["metadata"].get("tester", "To be filled")
                 },
                 "tested_system": {
                     "system_name": report_data["metadata"].get("tested_system", "KONE Elevator Control Service"),
-                    "system_version": report_data["metadata"].get("system_version", "待填写"),
-                    "software_name": report_data["metadata"].get("software_name", "待填写"),
-                    "software_version": report_data["metadata"].get("software_version", "待填写"),
+                    "system_version": report_data["metadata"].get("system_version", "To be filled"),
+                    "software_name": report_data["metadata"].get("software_name", "To be filled"),
+                    "software_version": report_data["metadata"].get("software_version", "To be filled"),
                     "kone_sr_api": report_data["metadata"].get("kone_sr_api_version", "v2.0"),
-                    "kone_test_assistant_email": report_data["metadata"].get("kone_assistant_email", "待填写")
+                    "kone_test_assistant_email": report_data["metadata"].get("kone_assistant_email", "To be filled")
                 }
             },
             "test_summary": report_data["statistics"],
+            "authentication_validation": {
+                "total_validations": len(self.auth_token_info),
+                "successful_validations": len([auth for auth in self.auth_token_info if auth.is_match]),
+                "failed_validations": len([auth for auth in self.auth_token_info if not auth.is_match]),
+                "validations": [
+                    {
+                        "requested_scope": auth.requested_scope,
+                        "token_scopes": auth.token_scopes,
+                        "is_match": auth.is_match,
+                        "error_message": auth.error_message,
+                        "token_type": auth.token_type,
+                        "expires_in": auth.expires_in,
+                        "timestamp": auth.timestamp
+                    }
+                    for auth in self.auth_token_info
+                ]
+            },
             "test_results": [
                 {
                     "test": result.test_id,
-                    "description": getattr(result, 'description', '待填写'),
-                    "expected_result": getattr(result, 'expected_result', '待填写'),
+                    "description": getattr(result, 'description', 'To be filled'),
+                    "expected_result": getattr(result, 'expected_result', 'To be filled'),
                     "test_result": getattr(result, 'test_result', '待填写'),
                     "status": result.status,
                     "duration_ms": result.duration_ms,
@@ -572,7 +714,7 @@ Ensuring the quality and security of a solution is every developer's responsibil
                     "response_data": result.response_data,
                     "category": result.category
                 }
-                for result in sorted(report_data["test_results"], key=lambda x: int(x.test_id.replace("Test_", "")))
+                for result in sorted(report_data["test_results"], key=lambda x: self._extract_test_number(x.test_id))
             ]
         }
         
@@ -741,13 +883,13 @@ Ensuring the quality and security of a solution is every developer's responsibil
             </div>
             <div id="details-{{ result.test_id }}" class="test-details">
                 <p><strong>Category:</strong> {{ result.category or 'Unknown' }}</p>
-                <p><strong>Duration:</strong> {{ "%.2f"|format(result.duration_ms) }} ms</p>
+                <p><strong>Duration:</strong> {{ "%.2f" | format(result.duration_ms) }} ms</p>
                 {% if result.error_message %}
                 <p><strong>Error:</strong> {{ result.error_message }}</p>
                 {% endif %}
                 {% if result.response_data %}
                 <p><strong>Response Data:</strong></p>
-                <pre>{{ result.response_data | tojson(indent=2) }}</pre>
+                <pre>{{ result.response_data | tojson }}</pre>
                 {% endif %}
             </div>
         </div>
@@ -923,7 +1065,7 @@ Ensuring the quality and security of a solution is every developer's responsibil
             current_row += 1
             
             # 添加测试结果数据 - 按测试ID排序
-            sorted_results = sorted(report_data["test_results"], key=lambda x: int(x.test_id.replace("Test_", "")))
+            sorted_results = sorted(report_data["test_results"], key=lambda x: self._extract_test_number(x.test_id))
             
             for result in sorted_results:
                 ws_main.cell(row=current_row, column=1, value=result.test_id).border = border

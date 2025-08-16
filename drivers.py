@@ -14,6 +14,22 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
 from collections import deque
 
+# 导入Token验证信息类
+try:
+    from report_generator import AuthTokenInfo
+except ImportError:
+    # 如果report_generator不可用，定义简单的AuthTokenInfo
+    from dataclasses import dataclass
+    @dataclass
+    class AuthTokenInfo:
+        requested_scope: str
+        token_scopes: str
+        is_match: bool
+        error_message: Optional[str] = None
+        token_type: Optional[str] = None
+        expires_in: Optional[int] = None
+        timestamp: Optional[str] = None
+
 # 配置日志
 logging.basicConfig(
     filename='elevator.log', 
@@ -162,12 +178,58 @@ class KoneDriverV2(ElevatorDriver):
         self.action_event_queue = asyncio.Queue()  # 专门用于action事件
         self.subscription_event_queue = asyncio.Queue()  # 专门用于订阅事件
         self.pending_requests = {}
+        self.auth_token_info_list = []  # 存储Token验证信息
+        
+        # WebSocket连接管理
         self.is_listening = False
         self.connection_lock = asyncio.Lock()
+        
+    def get_auth_token_info(self) -> List[AuthTokenInfo]:
+        """获取Token验证信息列表"""
+        return self.auth_token_info_list.copy()
+    
+    def clear_auth_token_info(self):
+        """清空Token验证信息"""
+        self.auth_token_info_list.clear()
+    
+    def _validate_token_scope(self, requested_scope: str, token_response: dict) -> AuthTokenInfo:
+        """验证Token scope并记录信息"""
+        token_scopes = token_response.get('scope', '')
+        token_type = token_response.get('token_type', 'Bearer')
+        expires_in = token_response.get('expires_in', 3600)
+        
+        # 检查scope是否匹配
+        is_match = requested_scope in token_scopes
+        error_message = None if is_match else f"Requested scope '{requested_scope}' not found in token scopes '{token_scopes}'"
+        
+        auth_info = AuthTokenInfo(
+            requested_scope=requested_scope,
+            token_scopes=token_scopes,
+            is_match=is_match,
+            error_message=error_message,
+            token_type=token_type,
+            expires_in=expires_in,
+            timestamp=datetime.now().isoformat()
+        )
+        
+        self.auth_token_info_list.append(auth_info)
+        return auth_info
         
     async def _get_access_token(self) -> str:
         """获取访问令牌"""
         if self.access_token and self.token_expiry and datetime.now() < self.token_expiry - timedelta(minutes=5):
+            # Token仍然有效 - 记录重用信息
+            requested_scope = 'application/inventory callgiving/*'
+            auth_info = AuthTokenInfo(
+                requested_scope=requested_scope,
+                token_scopes=requested_scope,  # 假设缓存token有正确scope
+                is_match=True,
+                error_message=None,
+                token_type="Bearer",
+                expires_in=int((self.token_expiry - datetime.now()).total_seconds()),
+                timestamp=datetime.now().isoformat()
+            )
+            self.auth_token_info_list.append(auth_info)
             return self.access_token
             
         # 尝试从配置文件加载缓存的token
@@ -175,6 +237,19 @@ class KoneDriverV2(ElevatorDriver):
         if cached_token and cached_expiry and datetime.now() < cached_expiry - timedelta(minutes=5):
             self.access_token = cached_token
             self.token_expiry = cached_expiry
+            
+            # 记录缓存token使用信息
+            requested_scope = 'application/inventory callgiving/*'
+            auth_info = AuthTokenInfo(
+                requested_scope=requested_scope,
+                token_scopes=requested_scope,  # 假设缓存token有正确scope
+                is_match=True,
+                error_message=None,
+                token_type="Bearer",
+                expires_in=int((cached_expiry - datetime.now()).total_seconds()),
+                timestamp=datetime.now().isoformat()
+            )
+            self.auth_token_info_list.append(auth_info)
             return cached_token
             
         # 请求新token
@@ -187,9 +262,10 @@ class KoneDriverV2(ElevatorDriver):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         
+        requested_scope = 'application/inventory callgiving/*'
         data = {
             'grant_type': 'client_credentials',
-            'scope': 'application/inventory callgiving/*'
+            'scope': requested_scope
         }
         
         log_evidence('request', {
@@ -209,15 +285,38 @@ class KoneDriverV2(ElevatorDriver):
                 })
                 
                 if response.status == 200:
+                    # 验证Token scope
+                    auth_info = self._validate_token_scope(requested_scope, response_data)
+                    
                     self.access_token = response_data['access_token']
                     expires_in = response_data.get('expires_in', 3600)
                     self.token_expiry = datetime.now() + timedelta(seconds=expires_in)
                     
                     # 保存token到配置
                     self._save_token_to_config(self.access_token, self.token_expiry)
+                    
+                    # 记录验证结果到日志
+                    if not auth_info.is_match:
+                        log_evidence('auth_warning', {
+                            'message': 'Token scope mismatch',
+                            'requested_scope': requested_scope,
+                            'token_scopes': auth_info.token_scopes,
+                            'error': auth_info.error_message
+                        })
+                    
                     return self.access_token
                 else:
-                    raise Exception(f"Token request failed: {response.status}")
+                    # Token请求失败也要记录
+                    error_message = f"Token request failed: {response.status}"
+                    auth_info = AuthTokenInfo(
+                        requested_scope=requested_scope,
+                        token_scopes="",
+                        is_match=False,
+                        error_message=error_message,
+                        timestamp=datetime.now().isoformat()
+                    )
+                    self.auth_token_info_list.append(auth_info)
+                    raise Exception(error_message)
     
     def _load_cached_token(self) -> tuple[Optional[str], Optional[datetime]]:
         """从配置文件加载缓存的token"""

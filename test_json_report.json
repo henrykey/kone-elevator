@@ -1,0 +1,68 @@
+{
+  "document_info": {
+    "title": "KONE Service Robot API Solution Validation Test Report",
+    "sr_api_version": "2.0",
+    "author": "IBC-AI CO.",
+    "generation_time": "2025-08-16T14:34:26.507032",
+    "report_version": "1.0"
+  },
+  "setup": {
+    "setup_description": "Get access to the equipment for testing:\n- Virtual equipment, available in KONE API portal\n- Preproduction equipment, by contacting KONE API Support",
+    "pre_test_setup": "Test environments available for the correct KONE API organization.\nBuilding id can be retrieved (/resource endpoint)."
+  },
+  "test_information": {
+    "date": "16.08.2025",
+    "solution_provider": {
+      "company_name": "IBC-AI CO.",
+      "company_address": "待填写",
+      "contact_person_name": "待填写",
+      "email": "待填写",
+      "telephone_number": "待填写",
+      "tester": "待填写"
+    },
+    "tested_system": {
+      "system_name": "KONE Elevator Control Service",
+      "system_version": "待填写",
+      "software_name": "待填写",
+      "software_version": "待填写",
+      "kone_sr_api": "v2.0",
+      "kone_test_assistant_email": "待填写"
+    }
+  },
+  "test_summary": {
+    "total_tests": 1,
+    "passed_tests": 1,
+    "failed_tests": 0,
+    "error_tests": 0,
+    "skipped_tests": 0,
+    "success_rate": 100.0,
+    "total_duration_ms": 500.0,
+    "average_duration_ms": 500.0,
+    "category_breakdown": {
+      "Unknown": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      }
+    }
+  },
+  "authentication_validation": {
+    "total_validations": 0,
+    "successful_validations": 0,
+    "failed_validations": 0,
+    "validations": []
+  },
+  "test_results": [
+    {
+      "test": "Test 1",
+      "description": "Test description",
+      "expected_result": "Should pass",
+      "test_result": "PASS",
+      "status": "PASS",
+      "duration_ms": 500.0,
+      "error_message": null,
+      "response_data": null,
+      "category": null
+    }
+  ]
+}
