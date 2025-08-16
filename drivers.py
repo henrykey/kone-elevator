@@ -336,7 +336,7 @@ class KoneDriverV2(ElevatorDriver):
                         if 'session_id' in data.get('data', {}):
                             data['callType'] = 'action'
                             await self.action_event_queue.put(data)
-                        elif 'type' in data and data['type'] in ['liftStatus', 'robotStatus']:
+                        elif 'type' in data and data['type'] in ['liftStatus', 'robotStatus', 'monitor-lift-status']:
                             data['callType'] = 'subscription'
                             await self.subscription_event_queue.put(data)
                         elif 'eventType' in data:
@@ -497,6 +497,7 @@ class KoneDriverV2(ElevatorDriver):
             'buildingId': building_id,
             'callType': 'monitor', 
             'groupId': group_id or '1',
+            'requestId': str(int(time.time() * 1000)),  # 添加必需的requestId字段
             'payload': {
                 'sub': sub or f'monitor_{int(time.time())}',
                 'duration': min(duration, 300),
