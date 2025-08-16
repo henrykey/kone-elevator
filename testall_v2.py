@@ -1132,8 +1132,8 @@ class KoneValidationSuite:
             result.add_observation({'phase': 'subscribe', 'data': subscribe_resp})
             
             if subscribe_resp.get('statusCode') == 201:
-                # 发起呼叫以产生事件
-                call_resp = await self.driver.call_action(
+                # 发起呼叫以产生事件 - 使用不等待事件的版本
+                call_resp = await self.driver.call_action_no_wait(
                     self.building_id, 1000, 2, destination=2000, group_id=self.group_id
                 )
                 result.add_observation({'phase': 'call', 'data': call_resp})
@@ -1164,7 +1164,7 @@ class KoneValidationSuite:
             total_calls = 10
             
             for i in range(total_calls):
-                call_resp = await self.driver.call_action(
+                call_resp = await self.driver.call_action_no_wait(
                     self.building_id, 1000, 1, group_id=self.group_id
                 )
                 if call_resp.get('statusCode') == 201:
@@ -1299,7 +1299,7 @@ class KoneValidationSuite:
             
             # 快速连续发送请求
             for i in range(20):
-                call_resp = await self.driver.call_action(
+                call_resp = await self.driver.call_action_no_wait(
                     self.building_id, 1000, 1, group_id=self.group_id
                 )
                 rapid_calls.append({
@@ -1439,7 +1439,7 @@ class KoneValidationSuite:
             # 测试单个请求性能
             for i in range(5):
                 start_time = time.time()
-                call_resp = await self.driver.call_action(
+                call_resp = await self.driver.call_action_no_wait(
                     self.building_id, 1000, 1, group_id=self.group_id
                 )
                 end_time = time.time()

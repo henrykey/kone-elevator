@@ -159,6 +159,8 @@ class KoneDriverV2(ElevatorDriver):
         self.session_id = None
         self.websocket = None
         self.event_queue = asyncio.Queue()
+        self.action_event_queue = asyncio.Queue()  # 专门用于action事件
+        self.subscription_event_queue = asyncio.Queue()  # 专门用于订阅事件
         self.pending_requests = {}
         self.is_listening = False
         self.connection_lock = asyncio.Lock()
@@ -330,8 +332,19 @@ class KoneDriverV2(ElevatorDriver):
                         if not future.done():
                             future.set_result(data)
                     else:
-                        # 否则是事件，放入事件队列
-                        await self.event_queue.put(data)
+                        # 否则是事件，根据类型分发到不同队列
+                        if 'session_id' in data.get('data', {}):
+                            data['callType'] = 'action'
+                            await self.action_event_queue.put(data)
+                        elif 'type' in data and data['type'] in ['liftStatus', 'robotStatus']:
+                            data['callType'] = 'subscription'
+                            await self.subscription_event_queue.put(data)
+                        elif 'eventType' in data:
+                            data['callType'] = 'notification'
+                            await self.subscription_event_queue.put(data)
+                        else:
+                            # 默认放入通用事件队列
+                            await self.event_queue.put(data)
                     
                 except json.JSONDecodeError as e:
                     logger.error(f"Failed to decode message: {e}")
@@ -492,6 +505,43 @@ class KoneDriverV2(ElevatorDriver):
         }
         return await self._send_message(message)
     
+    async def call_action_no_wait(self, building_id: str, area: int, action: int,
+                         destination: Optional[int] = None, delay: Optional[int] = None,
+                         allowed_lifts: Optional[List[int]] = None, group_size: int = 1,
+                         terminal: int = 1, group_id: Optional[str] = None) -> dict:
+        """动作呼叫 - 不等待事件，用于测试订阅"""
+        call_data = {
+            'action': action
+        }
+        
+        if destination is not None:
+            call_data['destination'] = destination
+            
+        if delay is not None:
+            call_data['delay'] = delay
+            
+        if allowed_lifts is not None:
+            call_data['allowed_lifts'] = allowed_lifts
+            
+        call_data['group_size'] = group_size
+        
+        message = {
+            'type': 'lift-call-api-v2',
+            'buildingId': building_id,
+            'callType': 'action',
+            'groupId': group_id or '1',
+            'payload': {
+                'request_id': self._generate_numeric_request_id(),
+                'area': area,
+                'time': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+                'terminal': terminal,
+                'call': call_data
+            }
+        }
+        
+        # 只发送消息并返回状态确认，不等待事件
+        return await self._send_message(message)
+    
     async def call_action(self, building_id: str, area: int, action: int,
                          destination: Optional[int] = None, delay: Optional[int] = None,
                          allowed_lifts: Optional[List[int]] = None, group_size: int = 1,
@@ -540,12 +590,10 @@ class KoneDriverV2(ElevatorDriver):
                 
                 while time.time() - start_time < timeout_seconds:
                     try:
-                        event = await asyncio.wait_for(self.event_queue.get(), timeout=2.0)
+                        event = await asyncio.wait_for(self.action_event_queue.get(), timeout=2.0)
                         
                         # 检查是否是呼叫相关的事件
-                        if (event.get('data', {}).get('session_id') or 
-                            event.get('sessionId') or
-                            'session_id' in str(event)):
+                        if event.get('data', {}).get('session_id'):
                             # 合并状态响应和事件数据，提取session_id到根级别
                             combined_response = status_response.copy()
                             combined_response.update(event)
@@ -638,8 +686,23 @@ class KoneDriverV2(ElevatorDriver):
         return await self._send_message(message)
     
     async def next_event(self, timeout: float = 30.0) -> Optional[dict]:
-        """获取下一个事件"""
+        """获取下一个事件 - 从所有队列获取"""
         try:
+            # 先尝试从订阅事件队列获取
+            try:
+                event = await asyncio.wait_for(self.subscription_event_queue.get(), timeout=0.1)
+                return event
+            except asyncio.TimeoutError:
+                pass
+                
+            # 尝试从action事件队列获取（可能是call状态变化事件）
+            try:
+                event = await asyncio.wait_for(self.action_event_queue.get(), timeout=0.1)
+                return event
+            except asyncio.TimeoutError:
+                pass
+                
+            # 如果专用队列都为空，从通用事件队列获取
             event = await asyncio.wait_for(self.event_queue.get(), timeout=timeout)
             return event
         except asyncio.TimeoutError:
