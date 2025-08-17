@@ -39,14 +39,7 @@
 - KONE API账号（生产环境）
 
 ### 安装与运行
-```bash
-git clone <仓库地址>
-cd elevator
-pip install -r requirements.txt
-```
-
 #### 配置KONE API（编辑`config.yaml`）
-```yaml
 kone:
   client_id: "你的client-id"
   client_secret: "你的client-secret"
@@ -54,10 +47,8 @@ kone:
   ws_endpoint: "wss://dev.kone.com/stream-v2"
 ```
 
-#### 启动REST API服务
 ```bash
 python acesslifts.py
-# 访问 http://localhost:8000
 ```
 
 #### 运行WebSocket测试套件

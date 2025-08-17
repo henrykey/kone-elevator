@@ -31,6 +31,13 @@ This project provides a complete solution for elevator control systems with two 
 - **📄 JSON-Only Reporting**: Structured, machine-readable compliance reports
 - **🚀 Production Grade**: Battle-tested against official KONE test scenarios
 
+## Release v2.0.3
+
+- Updated `konetests.py` to produce `reports/konetests_results.json` as a wrapped JSON object with the top-level key `"test_results"` (i.e. `{ "test_results": [ ... ] }`).
+- Ensured each test entry includes a canonical English `"test": "Test N"` field. The `konetests.py` runner now performs this normalization and writes the wrapped object directly.
+
+This change makes machine parsing of test output deterministic and compatible with downstream report generators (Markdown/Docx/HTML).
+
 #### **v2.0.1 Critical Compliance Fixes**:
 - **Test 3**: Proper elevator operational mode validation (Fire/OSS/ATS/PRC modes check)
 - **Test 20**: Corrected to official "Misplaced Building ID" test with 404 error validation
