@@ -2,7 +2,8 @@ import json
 from docx import Document
 from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-import json
+from docx.oxml.ns import qn
+from docx.shared import Inches
 
 def merge_json_to_docx(json_path, docx_template_path, output_path):
     # Load JSON data
@@ -52,54 +53,61 @@ def merge_json_to_docx(json_path, docx_template_path, output_path):
             if test_num is not None and result_cell is not None:
                 # Get test details
                 test_details = results_dict.get(test_num, {})
-                result_text = f"Result: {test_details.get('test_result', 'N/A')}\n"
-                result_text += f"Status: {test_details.get('status', 'N/A')}\n"
-                result_text += f"Description: {test_details.get('description', 'N/A')}\n"
-                result_text += f"Duration: {test_details.get('duration_ms', 'N/A')} ms\n"
+                
+                # Build formatted result text with consistent indentation
+                result_text = []
+                result_text.append(f"Result: {test_details.get('test_result', 'N/A')}")
+                result_text.append(f"Status: {test_details.get('status', 'N/A')}")
+                result_text.append(f"Description: {test_details.get('description', 'N/A')}")
+                result_text.append(f"Duration: {test_details.get('duration_ms', 'N/A')} ms")
                 
                 if test_details.get('error_message'):
-                    result_text += f"Error Message: {test_details.get('error_message')}\n"
+                    result_text.append(f"Error Message: {test_details.get('error_message')}")
                 
                 # Add response data
                 response_data = test_details.get('response_data', {})
                 if response_data:
-                    result_text += f"Response Data: {json.dumps(response_data, indent=2, ensure_ascii=False)}\n"
+                    result_text.append("Response Data:")
+                    result_text.append(json.dumps(response_data, indent=4, ensure_ascii=False))
                 
                 # Add API call details
                 api_calls = test_details.get('api_calls', [])
                 if api_calls:
-                    result_text += "API Calls:\n"
+                    result_text.append("API Calls:")
                     for i, call in enumerate(api_calls, 1):
-                        result_text += f"  Call {i}:\n"
-                        result_text += f"    Interface Type: {call.get('interface_type', 'N/A')}\n"
-                        result_text += f"    URL: {call.get('url', 'N/A')}\n"
-                        result_text += f"    Method: {call.get('method', 'N/A')}\n"
-                        result_text += f"    Request Parameters: {json.dumps(call.get('request_parameters', {}), indent=4, ensure_ascii=False)}\n"
-                        result_text += f"    Response Data: {json.dumps(call.get('response_data', {}), indent=4, ensure_ascii=False)}\n"
-                        result_text += f"    Status Code: {call.get('status_code', 'N/A')}\n"
-                        result_text += f"    Timestamp: {call.get('timestamp', 'N/A')}\n"
+                        result_text.append(f"  Call {i}:")
+                        result_text.append(f"    Interface Type: {call.get('interface_type', 'N/A')}")
+                        result_text.append(f"    URL: {call.get('url', 'N/A')}")
+                        result_text.append(f"    Method: {call.get('method', 'N/A')}")
+                        result_text.append(f"    Request Parameters:")
+                        result_text.append(json.dumps(call.get('request_parameters', {}), indent=6, ensure_ascii=False))
+                        result_text.append(f"    Response Data:")
+                        result_text.append(json.dumps(call.get('response_data', {}), indent=6, ensure_ascii=False))
+                        result_text.append(f"    Status Code: {call.get('status_code', 'N/A')}")
+                        result_text.append(f"    Timestamp: {call.get('timestamp', 'N/A')}")
                         if call.get('error_message'):
-                            result_text += f"    Error Message: {call.get('error_message')}\n"
+                            result_text.append(f"    Error Message: {call.get('error_message')}")
                 
                 # Add request parameters
                 request_params = test_details.get('request_parameters', {})
                 if request_params:
-                    result_text += f"Request Parameters: {json.dumps(request_params, indent=2, ensure_ascii=False)}\n"
+                    result_text.append("Request Parameters:")
+                    result_text.append(json.dumps(request_params, indent=4, ensure_ascii=False))
                 
-                result_text += f"Request Timestamp: {test_details.get('request_timestamp', 'N/A')}\n"
-                result_text += f"Response Timestamp: {test_details.get('response_timestamp', 'N/A')}\n"
+                result_text.append(f"Request Timestamp: {test_details.get('request_timestamp', 'N/A')}")
+                result_text.append(f"Response Timestamp: {test_details.get('response_timestamp', 'N/A')}")
                 
-                # Clear existing content
+                # Clear existing content in the result cell
                 for paragraph in result_cell.paragraphs:
                     paragraph.clear()
                 
-                # Add new paragraphs with formatted text
-                lines = result_text.split('\n')
-                for line in lines:
+                # Add new paragraphs with formatted text, setting font size to 9 and line spacing to 1.0
+                for line in result_text:
                     p = result_cell.add_paragraph(line.strip())
                     p.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                    p.paragraph_format.line_spacing = 1.0  # Set line spacing to 1.0
                     for run in p.runs:
-                        run.font.size = Pt(11)
+                        run.font.size = Pt(9)  # Set font size to 9 for inserted text only
                 
                 # Reset for next potential test
                 test_num = None
